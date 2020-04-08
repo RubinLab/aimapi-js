@@ -8,7 +8,7 @@
 import getElement from './getElement';
 import { getToolState } from '../../../stateManagement/toolState.js';
 import state from './state';
-import external from '../../../externalModules';
+import cornerstone from "cornerstone-core";
 
 import { getLogger } from '../../../util/logger';
 
@@ -32,7 +32,7 @@ export default function getLabelmapStats(
   segmentIndex,
   labelmapIndex
 ) {
-  const cornerstone = external.cornerstone;
+  
   const element = getElement(elementOrEnabledElementUID);
 
   if (!element) {
@@ -93,7 +93,6 @@ export default function getLabelmapStats(
  */
 function _getImagePlanes(imageIds) {
   const imagePlanes = [];
-  const cornerstone = external.cornerstone;
   const metadataProvider = cornerstone.metaData;
 
   let sufficientMetadata = true;
