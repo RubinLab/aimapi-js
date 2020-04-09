@@ -4,7 +4,7 @@ import Aim from "./Aim.jsx";
 const enumAimType = {
   imageAnnotation: 1,
   seriesAnnotation: 2,
-  studyAnnotation: 3,
+  studyAnnotation: 3
 };
 
 export function getImageIdAnnotations(aims) {
@@ -186,9 +186,31 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   // fill the segmentation related aim parts
   const segEntityData = getSegmentationEntityDataFromSeg(segmentation);
   // TODO fill in stats
-  const segStats = {};
-  addSegmentationToAim(aim, segEntityData, segStats);
-  console.log('AIM in segmentation', aim);
+  addSegmentationToAim(aim, segEntityData, {});
+  // console.log('AIM in segmentation', aim);
+  // remove extra entities
+  delete aim.imageAnnotations.ImageAnnotation[0].calculationEntityCollection;
+  delete aim.imageAnnotations.ImageAnnotation[0].markupEntityCollection;
+  delete aim.imageAnnotations.ImageAnnotation[0]
+    .imageAnnotationStatementCollection;
+
+  // add name, comment and segmentation
+  aim.imageAnnotations.ImageAnnotation[0].name = {
+    value: segDataset.SeriesDescription
+  };
+  // TODO what should the comment be. implement after mete implements comment
+  aim.imageAnnotations.ImageAnnotation[0].comment = { value: "Seg Only" };
+  aim.imageAnnotations.ImageAnnotation[0].typeCode = [
+    {
+      code: "SEG",
+      codeSystemName: "99EPAD",
+      "iso:displayName": {
+        "xmlns:iso": "uri:iso.org:21090",
+        value: "SEG Only"
+      }
+    }
+  ];
+
   return { aim };
 }
 // moved from aimEditor.jsx
@@ -198,8 +220,8 @@ function addUserToSeedData(seedData, userInfo) {
     seedData.user = userInfo;
   } else {
     let obj = {};
-    obj.loginName = sessionStorage.getItem('username');
-    obj.name = sessionStorage.getItem('displayName');
+    obj.loginName = sessionStorage.getItem("username");
+    obj.name = sessionStorage.getItem("displayName");
     seedData.user = obj;
   }
 }
@@ -211,8 +233,12 @@ function getDatasetFromBlob(segBlob, imageIdx) {
     fileReader.onload = event => {
       segArrayBuffer = event.target.result;
       const dicomData = dcmjs.data.DicomMessage.readFile(segArrayBuffer);
-      const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomData.dict);
-      dataset._meta = dcmjs.data.DicomMetaDictionary.namifyDataset(dicomData.meta);
+      const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(
+        dicomData.dict
+      );
+      dataset._meta = dcmjs.data.DicomMetaDictionary.namifyDataset(
+        dicomData.meta
+      );
       resolve(dataset);
     };
     fileReader.readAsArrayBuffer(segBlob);
@@ -239,7 +265,7 @@ function addSegmentationToAim(aim, segEntityData, segStats) {
     aim.createImageAnnotationStatement(2, segId, maxId);
   }
   if (volume) {
-    const volumeId = aim.createMaxCalcEntity({ volume, unit: 'mm3' });
+    const volumeId = aim.createMaxCalcEntity({ volume, unit: "mm3" });
     aim.createImageAnnotationStatement(2, segId, volumeId);
   }
 }
@@ -247,11 +273,11 @@ function addSegmentationToAim(aim, segEntityData, segStats) {
 function getSegmentationEntityDataFromSeg(dataset) {
   const refImage = getRefImageFromSeg(dataset);
   let obj = {};
-  obj['referencedSopInstanceUid'] = refImage.ReferencedSOPInstanceUID;
-  obj['seriesInstanceUid'] = dataset.SeriesInstanceUID;
-  obj['studyInstanceUid'] = dataset.StudyInstanceUID;
-  obj['sopClassUid'] = dataset.SOPClassUID;
-  obj['sopInstanceUid'] = dataset.SOPInstanceUID;
+  obj["referencedSopInstanceUid"] = refImage.ReferencedSOPInstanceUID;
+  obj["seriesInstanceUid"] = dataset.SeriesInstanceUID;
+  obj["studyInstanceUid"] = dataset.StudyInstanceUID;
+  obj["sopClassUid"] = dataset.SOPClassUID;
+  obj["sopInstanceUid"] = dataset.SOPInstanceUID;
   return obj;
 }
 // new method to populate image data from segmentation dicom image
@@ -265,27 +291,33 @@ function getAimImageDataFromSeg(image) {
   obj.image = [];
   const { aim, study, series, equipment, person } = obj;
   // seg data is coming in dcmjs format
-  aim.studyInstanceUid = image.StudyInstanceUID || '';
-  study.startTime = image.StudyTime || '';
-  study.instanceUid = image.StudyInstanceUID || '';
-  study.startDate = image.StudyDate || '';
-  study.accessionNumber = image.AccessionNumber || '';
-  series.instanceUid = image.ReferencedSeriesSequence.SeriesInstanceUID || '';
+  aim.studyInstanceUid = image.StudyInstanceUID || "";
+  study.startTime = image.StudyTime || "";
+  study.instanceUid = image.StudyInstanceUID || "";
+  study.startDate = image.StudyDate || "";
+  study.accessionNumber = image.AccessionNumber || "";
+  series.instanceUid = image.ReferencedSeriesSequence.SeriesInstanceUID || "";
   obj.image.push(getSingleImageDataFromSeg(image));
-  equipment.manufacturerName = image.Manufacturer || '';
-  equipment.manufacturerModelName = image.ManufacturerModelName || '';
-  equipment.softwareVersion = image.SoftwareVersions || '';
-  person.sex = image.PatientSex || '';
-  person.name = image.PatientName || '';
-  person.patientId = image.PatientID || '';
-  person.birthDate = image.PatientBirthDate || '';
+  equipment.manufacturerName = image.Manufacturer || "";
+  equipment.manufacturerModelName = image.ManufacturerModelName || "";
+  equipment.softwareVersion = image.SoftwareVersions || "";
+  person.sex = image.PatientSex || "";
+  person.name = image.PatientName || "";
+  person.patientId = image.PatientID || "";
+  person.birthDate = image.PatientBirthDate || "";
   return obj;
 }
 function getRefImageFromSeg(dataset) {
   // I needed to check if the sequence is array in each step as dcmjs makes it an object if there is only one item
-  const firstFrame = Array.isArray(dataset.PerFrameFunctionalGroupsSequence)? dataset.PerFrameFunctionalGroupsSequence[0] : dataset.PerFrameFunctionalGroupsSequence;
-  const derivation = Array.isArray(firstFrame.DerivationImageSequence)? firstFrame.DerivationImageSequence[0] : firstFrame.DerivationImageSequence;
-  const refImage = Array.isArray(derivation.SourceImageSequence)? derivation.SourceImageSequence[0] : derivation.SourceImageSequence;
+  const firstFrame = Array.isArray(dataset.PerFrameFunctionalGroupsSequence)
+    ? dataset.PerFrameFunctionalGroupsSequence[0]
+    : dataset.PerFrameFunctionalGroupsSequence;
+  const derivation = Array.isArray(firstFrame.DerivationImageSequence)
+    ? firstFrame.DerivationImageSequence[0]
+    : firstFrame.DerivationImageSequence;
+  const refImage = Array.isArray(derivation.SourceImageSequence)
+    ? derivation.SourceImageSequence[0]
+    : derivation.SourceImageSequence;
   return refImage;
 }
 
@@ -293,7 +325,7 @@ function getRefImageFromSeg(dataset) {
 function getSingleImageDataFromSeg(image) {
   const refImage = getRefImageFromSeg(image);
   return {
-    sopClassUid: refImage.ReferencedSOPClassUID || '',
-    sopInstanceUid: refImage.ReferencedSOPInstanceUID || '',
+    sopClassUid: refImage.ReferencedSOPClassUID || "",
+    sopInstanceUid: refImage.ReferencedSOPInstanceUID || ""
   };
 }

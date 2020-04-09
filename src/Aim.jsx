@@ -642,6 +642,11 @@ class Aim {
     const wrappedAim = `{"ImageAnnotationCollection": ${stringAim} } `;
     return wrappedAim;
   };
+
+  // new method to get the aim json
+  getAimJSON = () => {
+    return JSON.parse(this.getAim());
+  };
 }
 
 export default Aim;
