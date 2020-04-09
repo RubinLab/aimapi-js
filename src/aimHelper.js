@@ -196,10 +196,10 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
 
   // add name, comment and segmentation
   aim.imageAnnotations.ImageAnnotation[0].name = {
-    value: segDataset.SeriesDescription
+    value: segmentation.SeriesDescription
   };
   // TODO what should the comment be. implement after mete implements comment
-  aim.imageAnnotations.ImageAnnotation[0].comment = { value: "Seg Only" };
+  aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };
   aim.imageAnnotations.ImageAnnotation[0].typeCode = [
     {
       code: "SEG",
