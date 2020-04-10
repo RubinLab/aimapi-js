@@ -9,7 +9,11 @@ const enumAimType = {
 
 export function getImageIdAnnotations(aims) {
   let imageIdSpecificMarkups = {};
-  aims.forEach(aim => parseAim(aim, imageIdSpecificMarkups));
+  try {
+    aims.forEach(aim => parseAim(aim, imageIdSpecificMarkups));
+  } catch (err) {
+    console.log('Preparing ImageIdAnnotations' , err)
+  }
   return imageIdSpecificMarkups;
 }
 
@@ -69,7 +73,12 @@ function getMarkup(markupEntity, aim) {
 function getSegmentation(segmentationEntity, aim) {
   const imageId = segmentationEntity["referencedSopInstanceUid"]["root"];
   const markupUid = segmentationEntity["uniqueIdentifier"]["root"];
-  const calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
+  let calculations = [];
+  try {
+    calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
+  } catch (error) {
+    console.log("Can not get calculations", error);
+  }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
   return {
     imageId,
