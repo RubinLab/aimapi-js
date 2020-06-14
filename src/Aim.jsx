@@ -2,7 +2,7 @@ import aimConf from "./aimConf";
 import { modalities } from "./modality";
 import { generateUid } from "../../Utils/aid";
 
-class Aim {
+export class Aim {
   constructor(imageData, aimType, updatedAimId) {
     this.temp = {};
     ({
