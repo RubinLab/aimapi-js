@@ -2,7 +2,7 @@ import aimConf from "./aimConf";
 import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
 
-class Aim {
+export class Aim {
   constructor(imageData, aimType, updatedAimId) {
     this.temp = {};
     ({
@@ -216,8 +216,9 @@ class Aim {
   };
 
   createMeanCalcEntity = (value, preLabel) => {
-    var { unit, mean } = value;
-    const { unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit);
+    let typeCodeDcm,
+      { unit, mean } = value;
+    ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
     obj["calculationResultCollection"] = {
       CalculationResult: [this._createCalcResult(unit, "Mean", mean, preLabel)],
@@ -240,8 +241,9 @@ class Aim {
   };
 
   createStdDevCalcEntity = (value, preLabel) => {
-    var { unit, stdDev } = value;
-    const { unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit);
+    let typeCodeDcm,
+      { unit, stdDev } = value;
+    ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
 
     var obj = {};
     obj["calculationResultCollection"] = {
@@ -269,8 +271,9 @@ class Aim {
   };
 
   createMinCalcEntity = (value, preLabel) => {
-    var { unit, min } = value;
-    const { unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit);
+    let typeCodeDcm,
+      { unit, min } = value;
+    ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
     obj["calculationResultCollection"] = {
       CalculationResult: [
@@ -297,8 +300,9 @@ class Aim {
   };
 
   createMaxCalcEntity = (value, preLabel) => {
-    var { unit, max } = value;
-    const { unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit);
+    let typeCodeDcm,
+      { unit, max } = value;
+    ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
     obj["calculationResultCollection"] = {
       CalculationResult: [
@@ -711,11 +715,6 @@ class Aim {
     const stringAim = JSON.stringify(this);
     const wrappedAim = `{"ImageAnnotationCollection": ${stringAim} } `;
     return wrappedAim;
-  };
-
-  // new method to get the aim json
-  getAimJSON = () => {
-    return JSON.parse(this.getAim());
   };
 }
 
