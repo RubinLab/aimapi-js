@@ -2,7 +2,7 @@ import aimConf from "./aimConf";
 import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
 
-export class Aim {
+class Aim {
   constructor(imageData, aimType, updatedAimId) {
     this.temp = {};
     ({
@@ -715,6 +715,11 @@ export class Aim {
     const stringAim = JSON.stringify(this);
     const wrappedAim = `{"ImageAnnotationCollection": ${stringAim} } `;
     return wrappedAim;
+  };
+
+  // new method to get the aim json
+  getAimJSON = () => {
+    return JSON.parse(this.getAim());
   };
 }
 
