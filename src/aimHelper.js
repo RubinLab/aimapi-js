@@ -1,18 +1,19 @@
 import Aim from "./Aim.jsx";
+export { Aim };
 
 // moved from aimEditor.jsx
 const enumAimType = {
   imageAnnotation: 1,
   seriesAnnotation: 2,
-  studyAnnotation: 3
+  studyAnnotation: 3,
 };
 
 export function getImageIdAnnotations(aims) {
   let imageIdSpecificMarkups = {};
   try {
-    aims.forEach(aim => parseAim(aim, imageIdSpecificMarkups));
+    aims.forEach((aim) => parseAim(aim, imageIdSpecificMarkups));
   } catch (err) {
-    console.log('Preparing ImageIdAnnotations' , err)
+    console.log("Preparing ImageIdAnnotations", err);
   }
   return imageIdSpecificMarkups;
 }
@@ -23,7 +24,7 @@ function parseAim(aim, imageIdSpecificMarkups) {
   //check if the aim has markup
   if (imageAnnotation.markupEntityCollection) {
     var markupEntities = imageAnnotation.markupEntityCollection.MarkupEntity;
-    markupEntities.forEach(markupEntity => {
+    markupEntities.forEach((markupEntity) => {
       const { imageId, data } = getMarkup(markupEntity, aim);
       if (!imageIdSpecificMarkups[imageId])
         imageIdSpecificMarkups[imageId] = [data];
@@ -34,7 +35,7 @@ function parseAim(aim, imageIdSpecificMarkups) {
   if (imageAnnotation.segmentationEntityCollection) {
     var segmentationEntities =
       imageAnnotation.segmentationEntityCollection.SegmentationEntity;
-    segmentationEntities.forEach(segmentationEntity => {
+    segmentationEntities.forEach((segmentationEntity) => {
       const { imageId, data } = getSegmentation(segmentationEntity, aim);
       if (!imageIdSpecificMarkups[imageId])
         imageIdSpecificMarkups[imageId] = [data];
@@ -43,9 +44,11 @@ function parseAim(aim, imageIdSpecificMarkups) {
   }
 }
 
-function getMarkup(markupEntity, aim) {	
-  let imageId = markupEntity["imageReferenceUid"]["root"];	
-  const frameNumber = markupEntity["referencedFrameNumber"]? markupEntity["referencedFrameNumber"]["value"] : 1;
+function getMarkup(markupEntity, aim) {
+  let imageId = markupEntity["imageReferenceUid"]["root"];
+  const frameNumber = markupEntity["referencedFrameNumber"]
+    ? markupEntity["referencedFrameNumber"]["value"]
+    : 1;
   // if (frameNumber > -1) imageId = imageId + "&frame=" + frameNumber; //if multiframe reconstruct the imageId
   imageId = imageId + "&frame=" + frameNumber;
   const markupUid = markupEntity["uniqueIdentifier"]["root"];
@@ -65,8 +68,8 @@ function getMarkup(markupEntity, aim) {
         markupEntity.twoDimensionSpatialCoordinateCollection
           .TwoDimensionSpatialCoordinate,
       markupUid,
-      aimUid
-    }
+      aimUid,
+    },
   };
 }
 
@@ -86,19 +89,19 @@ function getSegmentation(segmentationEntity, aim) {
       markupType: segmentationEntity["xsi:type"],
       calculations,
       markupUid,
-      aimUid
-    }
+      aimUid,
+    },
   };
 }
 
 function getCalculationEntitiesOfMarkUp(aim, markupUid) {
   const imageAnnotationStatements = getImageAnnotationStatements(aim);
   let calculations = [];
-  imageAnnotationStatements.forEach(statement => {
+  imageAnnotationStatements.forEach((statement) => {
     if (statement.objectUniqueIdentifier.root === markupUid) {
       const calculationUid = statement.subjectUniqueIdentifier.root;
       const calculationEntities = getCalculationEntities(aim);
-      calculationEntities.forEach(calculation => {
+      calculationEntities.forEach((calculation) => {
         if (calculation.uniqueIdentifier.root === calculationUid)
           calculations.push(parseCalculation(calculation));
       });
@@ -154,8 +157,8 @@ export function getAimImageData(image) {
 
   series.instanceUid = image.data.string("x0020000e") || "";
   series.modality = image.data.string("x00080060") || "";
-  series.number = image.data.string("x00200011") || "";	
-  series.description = image.data.string("x0008103e") || "";	
+  series.number = image.data.string("x00200011") || "";
+  series.description = image.data.string("x0008103e") || "";
   series.instanceNumber = image.data.string("x00200013") || "";
 
   obj.image.push(getSingleImageData(image));
@@ -175,7 +178,7 @@ export function getAimImageData(image) {
 function getSingleImageData(image) {
   return {
     sopClassUid: image.data.string("x00080016") || "",
-    sopInstanceUid: image.data.string("x00080018") || ""
+    sopInstanceUid: image.data.string("x00080018") || "",
   };
 }
 
@@ -208,7 +211,7 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
 
   // add name, comment and segmentation
   aim.imageAnnotations.ImageAnnotation[0].name = {
-    value: segmentation.SeriesDescription
+    value: segmentation.SeriesDescription,
   };
   // TODO what should the comment be. implement after mete implements comment
   aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };
@@ -218,9 +221,9 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
       codeSystemName: "99EPAD",
       "iso:displayName": {
         "xmlns:iso": "uri:iso.org:21090",
-        value: "SEG Only"
-      }
-    }
+        value: "SEG Only",
+      },
+    },
   ];
 
   return { aim };
@@ -239,10 +242,10 @@ function addUserToSeedData(seedData, userInfo) {
 }
 // moved from aimEditor.jsx
 function getDatasetFromBlob(segBlob, imageIdx) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     let segArrayBuffer;
     var fileReader = new FileReader();
-    fileReader.onload = event => {
+    fileReader.onload = (event) => {
       segArrayBuffer = event.target.result;
       const dicomData = dcmjs.data.DicomMessage.readFile(segArrayBuffer);
       const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(
@@ -338,6 +341,6 @@ function getSingleImageDataFromSeg(image) {
   const refImage = getRefImageFromSeg(image);
   return {
     sopClassUid: refImage.ReferencedSOPClassUID || "",
-    sopInstanceUid: refImage.ReferencedSOPInstanceUID || ""
+    sopInstanceUid: refImage.ReferencedSOPInstanceUID || "",
   };
 }
