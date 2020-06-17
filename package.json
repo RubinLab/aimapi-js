@@ -1,6 +1,6 @@
 {
   "name": "aimapi",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Utility classes and methods for AIM creation and manipulation",
   "main": "build/aimapi.js",
   "scripts": {
