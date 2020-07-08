@@ -213,7 +213,7 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   aim.imageAnnotations.ImageAnnotation[0].name = {
     value: segmentation.SeriesDescription,
   };
-  // TODO what should the comment be. implement after mete implements comment
+  // TODO there is no way to fill programmed comment without opening the source image
   aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };
   aim.imageAnnotations.ImageAnnotation[0].typeCode = [
     {
@@ -307,6 +307,7 @@ function getAimImageDataFromSeg(image) {
   const { aim, study, series, equipment, person } = obj;
   // seg data is coming in dcmjs format
   aim.studyInstanceUid = image.StudyInstanceUID || "";
+  aim.comment = { value: "" };
   study.startTime = image.StudyTime || "";
   study.instanceUid = image.StudyInstanceUID || "";
   study.startDate = image.StudyDate || "";
@@ -324,15 +325,25 @@ function getAimImageDataFromSeg(image) {
 }
 function getRefImageFromSeg(dataset) {
   // I needed to check if the sequence is array in each step as dcmjs makes it an object if there is only one item
+  let refImage = '';
   const firstFrame = Array.isArray(dataset.PerFrameFunctionalGroupsSequence)
     ? dataset.PerFrameFunctionalGroupsSequence[0]
     : dataset.PerFrameFunctionalGroupsSequence;
-  const derivation = Array.isArray(firstFrame.DerivationImageSequence)
-    ? firstFrame.DerivationImageSequence[0]
-    : firstFrame.DerivationImageSequence;
-  const refImage = Array.isArray(derivation.SourceImageSequence)
-    ? derivation.SourceImageSequence[0]
-    : derivation.SourceImageSequence;
+  if (firstFrame.DerivationImageSequence) {
+    const derivation = Array.isArray(firstFrame.DerivationImageSequence)
+      ? firstFrame.DerivationImageSequence[0]
+      : firstFrame.DerivationImageSequence;
+    refImage = Array.isArray(derivation.SourceImageSequence)
+      ? derivation.SourceImageSequence[0]
+      : derivation.SourceImageSequence;
+  } else if (dataset.ReferencedSeriesSequence) {
+    const refSeries = Array.isArray(dataset.ReferencedSeriesSequence)
+      ? dataset.ReferencedSeriesSequence[0]
+      : dataset.ReferencedSeriesSequence;
+    refImage = Array.isArray(refSeries.ReferencedInstanceSequence)
+      ? refSeries.ReferencedInstanceSequence[0]
+      : refSeries.ReferencedInstanceSequence;
+  }
   return refImage;
 }
 
