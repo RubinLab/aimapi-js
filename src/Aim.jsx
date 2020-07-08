@@ -580,10 +580,13 @@ class Aim {
     return obj;
   };
 
+  // sanity check to prevent failing for empty comment, but why do I have to send an object with .value?
   _getComment = (comment) => {
-    if (comment.value.length)
-      comment.value = this._getProgrammedComment().concat("~~", comment.value);
-    else comment.value = this._getProgrammedComment();
+    if (comment && comment.value) { 
+      if (comment.value.length)
+        comment.value = this._getProgrammedComment().concat("~~", comment.value);
+      else comment.value = this._getProgrammedComment();
+    }
     return comment;
   };
 
