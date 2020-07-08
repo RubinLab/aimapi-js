@@ -156,12 +156,8 @@ class Aim {
   };
 
   createLengthCalcEntity = (length) => {
-    let { unit, value } = length;
-    var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [this._createCalcResult(unit, "LineLength", value)],
-    };
-    obj["description"] = { value: "Length" };
+    const { unit, value } = length;
+    const obj = {};
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [this._createTypeCode("G-D7FE", "SRT", "Length")];
@@ -176,12 +172,8 @@ class Aim {
   };
 
   createLongAxisCalcEntity = (longAxis) => {
-    let { unit, value } = longAxis;
-    var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [this._createCalcResult(unit, "LongAxis", value)],
-    };
-    obj["description"] = { value: "LongAxis" };
+    const { unit, value } = longAxis;
+    const obj = {};
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [this._createTypeCode("G-A185", "SRT", "LongAxis")];
@@ -196,12 +188,8 @@ class Aim {
   };
 
   createShortAxisCalcEntity = (shortAxis) => {
-    let { unit, value } = shortAxis;
-    var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [this._createCalcResult(unit, "ShortAxis", value)],
-    };
-    obj["description"] = { value: "ShortAxis" };
+    const { unit, value } = shortAxis;
+    const obj = {};
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [this._createTypeCode("G-A186", "SRT", "ShortAxis")];
@@ -215,15 +203,43 @@ class Aim {
     return uId;
   };
 
+  createAreaCalcEntity = (area) => {
+    const { unit, value } = area;
+    const obj = {};
+    const uId = generateUid();
+    obj["uniqueIdentifier"] = { root: uId };
+    obj["typeCode"] = [this._createTypeCode("99EPADA4", "99EPAD", "Area")];
+    obj["description"] = { value: "Area" };
+    obj["calculationResultCollection"] = {
+      CalculationResult: [this._createCalcResult(unit, "Area", value)],
+    };
+    this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
+      "CalculationEntity"
+    ].push(obj);
+    return uId;
+  };
+
+  createVolumeCalcEntity = (volume) => {
+    const { unit, value } = volume;
+    const obj = {};
+    const uId = generateUid();
+    obj["uniqueIdentifier"] = { root: uId };
+    obj["typeCode"] = [this._createTypeCode("RID28668", "Radlex", "Volume")];
+    obj["description"] = { value: "Volume" };
+    obj["calculationResultCollection"] = {
+      CalculationResult: [this._createCalcResult(unit, "Volume", value)],
+    };
+    this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
+      "CalculationEntity"
+    ].push(obj);
+    return uId;
+  };
+
   createMeanCalcEntity = (value, preLabel) => {
     let typeCodeDcm,
       { unit, mean } = value;
     ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [this._createCalcResult(unit, "Mean", mean, preLabel)],
-    };
-    obj["description"] = { value: "Mean" };
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [
@@ -246,12 +262,6 @@ class Aim {
     ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
 
     var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [
-        this._createCalcResult(unit, "Standard Deviation", stdDev, preLabel),
-      ],
-    };
-    obj["description"] = { value: "Standard Deviation" };
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [
@@ -275,12 +285,6 @@ class Aim {
       { unit, min } = value;
     ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [
-        this._createCalcResult(unit, "Minimum", min, preLabel),
-      ],
-    };
-    obj["description"] = { value: "Minimum" };
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [
@@ -304,12 +308,6 @@ class Aim {
       { unit, max } = value;
     ({ unit, typeCodeDcm } = this._getAimUnitAndDcmTypeCode(unit));
     var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [
-        this._createCalcResult(unit, "Maximum", max, preLabel),
-      ],
-    };
-    obj["description"] = { value: "Maximum" };
     const uId = generateUid();
     obj["uniqueIdentifier"] = { root: uId };
     obj["typeCode"] = [
@@ -337,30 +335,6 @@ class Aim {
         typeCodeDcm: this._createTypeCode(126401, "DCM", "SUVbw"),
       };
     return { unit, typeCodeDcm: this._createTypeCode() };
-  };
-
-  createVolumeCalcEntity = (value, preLabel) => {
-    var { unit, volume } = value;
-    var obj = {};
-    obj["calculationResultCollection"] = {
-      CalculationResult: [
-        this._createCalcResult(unit, "Volume", volume, preLabel),
-      ],
-    };
-    obj["description"] = { value: "Volume" };
-    const uId = generateUid();
-    obj["uniqueIdentifier"] = { root: uId };
-    obj["typeCode"] = [this._createTypeCode("RID28668", "Radlex", "Volume")];
-    obj["description"] = { value: "Volume" };
-    obj["calculationResultCollection"] = {
-      CalculationResult: [
-        this._createCalcResult(unit, "Volume", volume, preLabel),
-      ],
-    };
-    this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
-      "CalculationEntity"
-    ].push(obj);
-    return uId;
   };
 
   createCommonCalcEntites = (mean, stdDev, min, max, preLabel) => {
@@ -422,11 +396,7 @@ class Aim {
     return coordinates;
   };
 
-  addMarkupEntity = (type, shapeIndex, points, imageReferenceUid) => {
-    const frameNumber = this._getFrameNumber(imageReferenceUid);
-    if (frameNumber > -1)
-      imageReferenceUid = imageReferenceUid.split("&frame=")[0]; //if multiframe strip the frame number from imageUID
-
+  addMarkupEntity = (type, shapeIndex, points, imageUid, frameNum) => {
     var obj = {};
     obj["includeFlag"] = { value: true };
     obj["twoDimensionSpatialCoordinateCollection"] = {
@@ -440,19 +410,12 @@ class Aim {
     obj["uniqueIdentifier"] = { root: uId };
     obj["shapeIdentifier"] = { value: shapeIndex };
     obj["includeFlag"] = { value: true };
-    obj["imageReferenceUid"] = { root: imageReferenceUid };
-    obj["referencedFrameNumber"] = { value: frameNumber };
+    obj["imageReferenceUid"] = { root: imageUid };
+    obj["referencedFrameNumber"] = { value: frameNum };
     obj["twoDimensionSpatialCoordinateCollection"] = {
       TwoDimensionSpatialCoordinate: this._createCoordinateArray(points),
     };
-
     return uId;
-  };
-
-  _getFrameNumber = (imageReferenceUid) => {
-    const frameNumber = imageReferenceUid.split("frame=");
-    if (frameNumber.length > 1) return frameNumber[1];
-    return 1;
   };
 
   /*                                          */
@@ -582,9 +545,12 @@ class Aim {
 
   // sanity check to prevent failing for empty comment, but why do I have to send an object with .value?
   _getComment = (comment) => {
-    if (comment && comment.value) { 
+    if (comment && comment.value) {
       if (comment.value.length)
-        comment.value = this._getProgrammedComment().concat("~~", comment.value);
+        comment.value = this._getProgrammedComment().concat(
+          "~~",
+          comment.value
+        );
       else comment.value = this._getProgrammedComment();
     }
     return comment;
