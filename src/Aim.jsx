@@ -551,8 +551,7 @@ class Aim {
           "~~",
           comment.value
         );
-      else comment.value = this._getProgrammedComment();
-    }
+    } else comment.value = this._getProgrammedComment();
     return comment;
   };
 
