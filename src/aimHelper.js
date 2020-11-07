@@ -9,22 +9,26 @@ const enumAimType = {
 };
 
 export function getImageIdAnnotations(aims) {
+  console.log("Aims", aims);
   let imageIdSpecificMarkups = {};
   try {
     aims.forEach((aim) => parseAim(aim, imageIdSpecificMarkups));
   } catch (err) {
     console.log("Preparing ImageIdAnnotations", err);
   }
+  console.log("imageIdspecificMarkups", imageIdSpecificMarkups);
   return imageIdSpecificMarkups;
 }
 
 function parseAim(aim, imageIdSpecificMarkups) {
+  console.log("in parse aims", aim);
   var imageAnnotation =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0];
   //check if the aim has markup
   if (imageAnnotation.markupEntityCollection) {
     var markupEntities = imageAnnotation.markupEntityCollection.MarkupEntity;
     markupEntities.forEach((markupEntity) => {
+      console.log("Markup entity", markupEntity);
       const { imageId, data } = getMarkup(markupEntity, aim);
       if (!imageIdSpecificMarkups[imageId])
         imageIdSpecificMarkups[imageId] = [data];
@@ -45,6 +49,7 @@ function parseAim(aim, imageIdSpecificMarkups) {
 }
 
 function getMarkup(markupEntity, aim) {
+  console.log("In get markup entity", markupEntity);
   let imageId = markupEntity["imageReferenceUid"]["root"];
   const frameNumber = markupEntity["referencedFrameNumber"]
     ? markupEntity["referencedFrameNumber"]["value"]
@@ -59,6 +64,7 @@ function getMarkup(markupEntity, aim) {
     console.log("Can not get calculations", error);
   }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
+  console.log("returning markup", imageId);
   return {
     imageId,
     data: {
@@ -325,7 +331,7 @@ function getAimImageDataFromSeg(image) {
 }
 function getRefImageFromSeg(dataset) {
   // I needed to check if the sequence is array in each step as dcmjs makes it an object if there is only one item
-  let refImage = '';
+  let refImage = "";
   const firstFrame = Array.isArray(dataset.PerFrameFunctionalGroupsSequence)
     ? dataset.PerFrameFunctionalGroupsSequence[0]
     : dataset.PerFrameFunctionalGroupsSequence;
