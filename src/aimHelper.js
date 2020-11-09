@@ -9,26 +9,37 @@ const enumAimType = {
 };
 
 export function getImageIdAnnotations(aims) {
-  console.log("Aims", aims);
   let imageIdSpecificMarkups = {};
   try {
     aims.forEach((aim) => parseAim(aim, imageIdSpecificMarkups));
   } catch (err) {
-    console.log("Preparing ImageIdAnnotations", err);
+    console.error("Preparing ImageIdAnnotations", err);
   }
-  console.log("imageIdspecificMarkups", imageIdSpecificMarkups);
   return imageIdSpecificMarkups;
 }
 
 function parseAim(aim, imageIdSpecificMarkups) {
-  console.log("in parse aims", aim);
   var imageAnnotation =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0];
+  if (
+    (!imageAnnotation.markupEntityCollection ||
+      imageAnnotation.markupEntityCollection.MarkupEntity.length === 0) &&
+    (!imageAnnotation.segmentationEntityCollection ||
+      imageAnnotation.segmentationEntityCollection.SegmentationEntity.length ===
+        0)
+  ) {
+    const series =
+      imageAnnotation.imageReferenceEntityCollection.ImageReferenceEntity[0]
+        .imageStudy.imageSeries;
+    imageIdSpecificMarkups[
+      series.imageCollection.Image[0].sopInstanceUid.root
+    ] = [{ aimUid: aim.ImageAnnotationCollection.uniqueIdentifier.root }];
+  }
+
   //check if the aim has markup
   if (imageAnnotation.markupEntityCollection) {
     var markupEntities = imageAnnotation.markupEntityCollection.MarkupEntity;
     markupEntities.forEach((markupEntity) => {
-      console.log("Markup entity", markupEntity);
       const { imageId, data } = getMarkup(markupEntity, aim);
       if (!imageIdSpecificMarkups[imageId])
         imageIdSpecificMarkups[imageId] = [data];
@@ -49,7 +60,6 @@ function parseAim(aim, imageIdSpecificMarkups) {
 }
 
 function getMarkup(markupEntity, aim) {
-  console.log("In get markup entity", markupEntity);
   let imageId = markupEntity["imageReferenceUid"]["root"];
   const frameNumber = markupEntity["referencedFrameNumber"]
     ? markupEntity["referencedFrameNumber"]["value"]
@@ -61,11 +71,12 @@ function getMarkup(markupEntity, aim) {
   try {
     calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
   } catch (error) {
-    console.log("Can not get calculations", error);
+    console.error("Can not get calculations", error);
   }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
-  console.log("returning markup", imageId);
-  return {
+  const color = markupEntity?.lineColor?.value;
+
+  let retData = {
     imageId,
     data: {
       markupType: markupEntity["xsi:type"],
@@ -77,6 +88,9 @@ function getMarkup(markupEntity, aim) {
       aimUid,
     },
   };
+
+  if (color) retData.data["color"] = color;
+  return retData;
 }
 
 function getSegmentation(segmentationEntity, aim) {
@@ -86,7 +100,7 @@ function getSegmentation(segmentationEntity, aim) {
   try {
     calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
   } catch (error) {
-    console.log("Can not get calculations", error);
+    console.error("Can not get calculations", error);
   }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
   return {
