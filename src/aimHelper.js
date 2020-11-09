@@ -13,7 +13,7 @@ export function getImageIdAnnotations(aims) {
   try {
     aims.forEach((aim) => parseAim(aim, imageIdSpecificMarkups));
   } catch (err) {
-    console.log("Preparing ImageIdAnnotations", err);
+    console.error("Preparing ImageIdAnnotations", err);
   }
   return imageIdSpecificMarkups;
 }
@@ -21,6 +21,21 @@ export function getImageIdAnnotations(aims) {
 function parseAim(aim, imageIdSpecificMarkups) {
   var imageAnnotation =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0];
+  if (
+    (!imageAnnotation.markupEntityCollection ||
+      imageAnnotation.markupEntityCollection.MarkupEntity.length === 0) &&
+    (!imageAnnotation.segmentationEntityCollection ||
+      imageAnnotation.segmentationEntityCollection.SegmentationEntity.length ===
+        0)
+  ) {
+    const series =
+      imageAnnotation.imageReferenceEntityCollection.ImageReferenceEntity[0]
+        .imageStudy.imageSeries;
+    imageIdSpecificMarkups[
+      series.imageCollection.Image[0].sopInstanceUid.root
+    ] = [{ aimUid: aim.ImageAnnotationCollection.uniqueIdentifier.root }];
+  }
+
   //check if the aim has markup
   if (imageAnnotation.markupEntityCollection) {
     var markupEntities = imageAnnotation.markupEntityCollection.MarkupEntity;
@@ -56,10 +71,12 @@ function getMarkup(markupEntity, aim) {
   try {
     calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
   } catch (error) {
-    console.log("Can not get calculations", error);
+    console.error("Can not get calculations", error);
   }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
-  return {
+  const color = markupEntity?.lineColor?.value;
+
+  let retData = {
     imageId,
     data: {
       markupType: markupEntity["xsi:type"],
@@ -71,6 +88,9 @@ function getMarkup(markupEntity, aim) {
       aimUid,
     },
   };
+
+  if (color) retData.data["color"] = color;
+  return retData;
 }
 
 function getSegmentation(segmentationEntity, aim) {
@@ -80,7 +100,7 @@ function getSegmentation(segmentationEntity, aim) {
   try {
     calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
   } catch (error) {
-    console.log("Can not get calculations", error);
+    console.error("Can not get calculations", error);
   }
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
   return {
@@ -325,7 +345,7 @@ function getAimImageDataFromSeg(image) {
 }
 function getRefImageFromSeg(dataset) {
   // I needed to check if the sequence is array in each step as dcmjs makes it an object if there is only one item
-  let refImage = '';
+  let refImage = "";
   const firstFrame = Array.isArray(dataset.PerFrameFunctionalGroupsSequence)
     ? dataset.PerFrameFunctionalGroupsSequence[0]
     : dataset.PerFrameFunctionalGroupsSequence;
