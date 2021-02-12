@@ -3,7 +3,7 @@ import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
 
 class Aim {
-  constructor(imageData, aimType, updatedAimId) {
+  constructor(imageData, aimType, updatedAimId, trackingUId = generateUid()) {
     this.temp = {};
     ({
       aim: this.temp.aim,
@@ -15,6 +15,7 @@ class Aim {
       user: this.temp.user,
       person: this.temp.person,
     } = imageData);
+    this.temp.aim.trackingUId = trackingUId;
     this.xmlns = aimConf.xmlns;
     this["xmlns:rdf"] = aimConf["xmlns:rdf"];
     this["xmlns:xsi"] = aimConf["xmlns:xsi"];
@@ -513,9 +514,11 @@ class Aim {
       imagingPhysicalEntityCollection,
       imagingObservationEntityCollection,
       inferenceEntityCollection,
+      trackingUId
     } = this.temp.aim;
     var obj = {};
     obj["uniqueIdentifier"] = { root: generateUid() };
+    obj["trackingUniqueIdentifier"] = { root: trackingUId };
     obj["typeCode"] = typeCode;
     obj["dateTime"] = { value: this.getDate() };
     obj["name"] = name;
