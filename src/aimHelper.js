@@ -1,6 +1,4 @@
 import Aim from "./Aim.jsx";
-import { line } from "./Line";
-export { Aim };
 
 // moved from aimEditor.jsx
 const enumAimType = {
@@ -382,54 +380,3 @@ function getSingleImageDataFromSeg(image) {
     sopInstanceUid: refImage.ReferencedSOPInstanceUID || "",
   };
 }
-
-
-export function createLineTool(markup, color) {
-  const data = JSON.parse(JSON.stringify(line));
-  data.color = markup.color ? markup.color : color;
-  data.aimId = markup.aimUid;
-  data.invalidated = true;
-  createLinePoints(data, markup.coordinates, markup.calculations);
-  console.error('data', data);
-  return data;
-};
-// TODO calculations are not taken from aim?
-function createLinePoints(data, points, calculations) {
-  data.handles.start.x = points[0].x.value;
-  data.handles.start.y = points[0].y.value;
-  data.handles.end.x = points[1].x.value;
-  data.handles.end.y = points[1].y.value;
-  data.length = 0;
-  if (calculations) {
-    for (let i=0; i< calculations.length; i += 1) {
-      console.error('calc', calculations[i].type, calculations[i].value);
-      if (calculations[i].type === 'Length') {
-        data.length = parseFloat(calculations[i].value) * 100;
-        break;
-      }
-    }
-  }
-};
-
-// TODO markuptype and coordinates
-export function createTool (markup, color, seriesUid, studyUid) {
-  const type = markup.markupType || markup['xsi:type'];
-  switch (type) {
-    // case "TwoDimensionPolyline":
-    //   this.createPolygonTool(markup, color, seriesUid, studyUid);
-    //   break;
-    case "TwoDimensionMultiPoint":
-      return {type:'Length', data:createLineTool(markup, color, seriesUid, studyUid)};
-    // case "TwoDimensionCircle":
-    //   this.createCircleTool(markup, color, seriesUid, studyUid);
-    //   break;
-    // case "TwoDimensionPoint":
-    //   this.createPointTool(markup, color, seriesUid, studyUid);
-    //   break;
-    // case "Bidirectional":
-    //   this.createBidirectionalTool(imageId, markup, color, seriesUid, studyUid);
-    //   break;
-    // default:
-    //   return;
-  }
-};
