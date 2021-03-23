@@ -14,10 +14,25 @@ export function aim2dicomsr(aim) {
     const { MeasurementReport } = dcmjs.adapters.Cornerstone;
 
     const quantitativeEvaluations = getQuantitativeEvaluations(aim);
+    const options = {
+      quantitativeEvaluations,
+      PersonName: aim.ImageAnnotationCollection.user.name.value,
+      trackingIdentifierTextValue: // finding??
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name
+          .value,
+    };
+    if (
+      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+        .trackingUniqueIdentifier
+    )
+      options.trackingUniqueIdentifier =
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].trackingUniqueIdentifier.root;
+
+    // TODO add loginname
     const report = MeasurementReport.generateReport(
       toolstate,
       metaDataProvider,
-      { quantitativeEvaluations }
+      options
     );
 
     // remove ImageComments throwing warnings in dciodvfy
@@ -105,8 +120,13 @@ function generateMetadataProviderAndToolState(aim) {
     markups = linesToPerpendicular(markups);
     markups.forEach((markup) => {
       const tool = createTool(markup);
+      tool.data.identifier = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name
+      .value; // add type to the end? or shape uid
       // template
-      tool.data.finding = epadCD2SRCD(aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].typeCode[0]);
+      tool.data.finding = epadCD2SRCD(
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+          .typeCode[0]
+      );
       // physical entities
       tool.data.findingSites = getFindingSites(aim);
       if (!toolstate[imageId]) toolstate[imageId] = {};
