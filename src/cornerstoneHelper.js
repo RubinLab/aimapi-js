@@ -1,8 +1,8 @@
-import { bidirectional } from "./cornerstoneTools/Bidirectional";
-import { circle } from "./cornerstoneTools/Circle";
-import { freehand } from "./cornerstoneTools/Freehand";
-import { line } from "./cornerstoneTools/Line";
-import { probe } from "./cornerstoneTools/Probe";
+import { bidirectional } from "./cornerstoneShapes/Bidirectional";
+import { circle } from "./cornerstoneShapes/Circle";
+import { freehand } from "./cornerstoneShapes/Freehand";
+import { line } from "./cornerstoneShapes/Line";
+import { probe } from "./cornerstoneShapes/Probe";
 
 // TODO calculations are not taken from aim?
 function createLine(data, points, calculations) {

@@ -6,6 +6,7 @@ import {
   createOfflineAimSegmentation,
 } from "./aimHelper.js";
 import { createTool } from "./cornerstoneHelper.js";
+import { aim2dicomsr } from "./conversion.js";
 const aimapi = {
   Aim,
   getImageIdAnnotations,
@@ -13,6 +14,7 @@ const aimapi = {
   getAimImageData,
   createOfflineAimSegmentation,
   createTool,
+  aim2dicomsr
 };
 
 export {
@@ -22,5 +24,6 @@ export {
   getAimImageData,
   createOfflineAimSegmentation,
   createTool,
+  aim2dicomsr
 };
 export default aimapi;
