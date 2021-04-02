@@ -17,17 +17,7 @@ export function aim2dicomsr(aim) {
     const options = {
       quantitativeEvaluations,
       PersonName: aim.ImageAnnotationCollection.user.name.value,
-      trackingIdentifierTextValue: // finding??
-        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name
-          .value,
     };
-    if (
-      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-        .trackingUniqueIdentifier
-    )
-      options.trackingUniqueIdentifier =
-        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].trackingUniqueIdentifier.root;
-
     // TODO add loginname
     const report = MeasurementReport.generateReport(
       toolstate,
@@ -183,6 +173,13 @@ function generateMetadataProviderAndToolState(aim) {
     markups.forEach((markup) => {
       const tool = createTool(markup);
       tool.data.identifier = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name.value; // add type to the end? or shape uid
+      if (
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+          .trackingUniqueIdentifier
+      )
+        tool.data.trackingUniqueIdentifier =
+          aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].trackingUniqueIdentifier.root;
+  
       // template
       tool.data.finding = epadCD2SRCD(
         aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
