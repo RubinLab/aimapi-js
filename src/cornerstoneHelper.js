@@ -52,15 +52,13 @@ function createBidirectional(data, points, calculations) {
         calculations[i]
       );
       // TODO check with Mete
-      if (calculations[i].type === "longAxisLength") {
-        data.longAxisLength = parseFloat(calculations[i].value);
+      if (calculations[i].type === "LongAxis") {
+        data.longestDiameter = parseFloat(calculations[i].value);
         data.unit = calculations[i].unit; // TODO ??
-        break;
       }
-      if (calculations[i].type === "shortAxisLength") {
-        data.shortAxisLength = parseFloat(calculations[i].value);
+      if (calculations[i].type === "ShortAxis") {
+        data.shortestDiameter = parseFloat(calculations[i].value);
         data.unit = calculations[i].unit; // TODO ??
-        break;
       }
     }
   }
