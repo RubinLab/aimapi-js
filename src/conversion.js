@@ -55,6 +55,17 @@ function epadCD2SRCD(typecode) {
     CodeMeaning: typecode["iso:displayName"].value,
   };
 }
+
+function cqToSRMeasuredValueSequence(value, units) {
+  return {
+    MeasurementUnitsCodeSequence: units || {
+      CodeValue: "linear",
+      CodingSchemeDesignator: "UCUM",
+      CodeMeaning: "linear"
+  },
+  NumericValue: value
+  };
+}
 // obj can be observation entity or observation entity characteristic
 // TODO what about physical entity characteristic
 function createQuantitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
@@ -62,13 +73,28 @@ function createQuantitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
   if (obj.typeCode && (obj.questionTypeCode || upperQuestion)) {
     // if the obj does not have question type use the imaging observation
     const conceptName = epadCD2SRCD(obj.questionTypeCode ? obj.questionTypeCode[0]: upperQuestion[0]);
-    const concept = epadCD2SRCD(obj.typeCode[0]);
-    return {
-      RelationshipType: "CONTAINS",
-      ValueType: "CODE",
-      ConceptNameCodeSequence: conceptName,
-      ConceptCodeSequence: concept,
-    };
+    if (obj.characteristicQuantificationCollection && obj.characteristicQuantificationCollection.CharacteristicQuantification[0]) {
+      // TODO other characteristic quantifications
+      // TODO getting the first cq only, do we need to support the array?
+      switch (obj.characteristicQuantificationCollection.CharacteristicQuantification[0]['xsi:type']) {
+        case 'Scale':
+          const value = obj.characteristicQuantificationCollection.CharacteristicQuantification[0].value.value;
+          return {
+            RelationshipType: "CONTAINS",
+            ValueType: "NUM",
+            ConceptNameCodeSequence: conceptName,
+            MeasuredValueSequence: cqToSRMeasuredValueSequence(value),
+          };
+      }
+    } else {
+      const concept = epadCD2SRCD(obj.typeCode[0]);
+      return {
+        RelationshipType: "CONTAINS",
+        ValueType: "CODE",
+        ConceptNameCodeSequence: conceptName,
+        ConceptCodeSequence: concept,
+      };
+    }
   } 
   return null;
 }
@@ -90,15 +116,6 @@ function getQuantitativeEvaluations(aim) {
       if (io.imagingObservationCharacteristicCollection) {
         io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.forEach(
           (ioc) => {
-            // this is just for nominal
-            // TODO how about others
-            // TODO it is no coded term need to figure out the correct way to put in sr
-            // if I put it in concept I get this
-            // Error - Missing attribute Type 1 Required Element=<NumericValue> Module=<NumericMeasurementMacro>
-            // const val = (ioc.characteristicQuantificationCollection) ? 
-            //   ioc.characteristicQuantificationCollection.CharacteristicQuantification[0].value.value
-            //   : 
-            //   undefined;
             // still supporting ioc with no question type
             const qeIOC = createQuantitativeEvaluationWQuestionTypeCode(ioc, io.questionTypeCode || io.typeCode);
             if (qeIOC) quantitativeEvaluations.push(qeIOC);
