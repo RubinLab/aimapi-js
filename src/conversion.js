@@ -13,10 +13,12 @@ export function aim2dicomsr(aim) {
     } = generateMetadataProviderAndToolState(aim);
     const { MeasurementReport } = dcmjs.adapters.Cornerstone;
 
-    const quantitativeEvaluations = getQuantitativeEvaluations(aim);
+    const qualitativeEvaluations = getQualitativeEvaluations(aim);
+    const procedureReported = getProcedureReported(aim);
     const options = {
-      quantitativeEvaluations,
+      qualitativeEvaluations,
       PersonName: aim.ImageAnnotationCollection.user.name.value,
+      ProcedureReported: procedureReported,
     };
     // TODO add loginname
     const report = MeasurementReport.generateReport(
@@ -58,7 +60,7 @@ function cqToSRMeasuredValueSequence(value, units) {
 }
 // obj can be observation entity or observation entity characteristic
 // TODO what about physical entity characteristic
-function createQuantitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
+function createQualitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
   // we need typecode and either question type or upper question (observation for characteristic)
   if (obj.typeCode && (obj.questionTypeCode || upperQuestion)) {
     // if the obj does not have question type use the imaging observation
@@ -90,26 +92,26 @@ function createQuantitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
 }
 
 // TODO handle observation characteristic under physical entity
-function getQuantitativeEvaluations(aim) {
+function getQualitativeEvaluations(aim) {
   const imagingObservations =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
       .imagingObservationEntityCollection;
   if (!imagingObservations) return [];
-  const quantitativeEvaluations = [];
+  const qualitativeEvaluations = [];
   imagingObservations.ImagingObservationEntity.forEach((io) => {
     // we have the question type, make question type question, typecode as answer
     // assuming if one has it all does
     if (io.questionTypeCode) {
-      const qeIO = createQuantitativeEvaluationWQuestionTypeCode(io);
-      if (qeIO) quantitativeEvaluations.push(qeIO);
-      else console.error('Could not generate quantitative evaluation entity for imaging observation', 'label:', io.label.value, 'questionTypeCode:', io.questionTypeCode, 'typeCode:', io.typeCode );
+      const qeIO = createQualitativeEvaluationWQuestionTypeCode(io);
+      if (qeIO) qualitativeEvaluations.push(qeIO);
+      else console.error('Could not generate qualitative evaluation entity for imaging observation', 'label:', io.label.value, 'questionTypeCode:', io.questionTypeCode, 'typeCode:', io.typeCode );
       if (io.imagingObservationCharacteristicCollection) {
         io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.forEach(
           (ioc) => {
             // still supporting ioc with no question type
-            const qeIOC = createQuantitativeEvaluationWQuestionTypeCode(ioc, io.questionTypeCode || io.typeCode);
-            if (qeIOC) quantitativeEvaluations.push(qeIOC);
-            else console.error('Could not generate quantitative evaluation entity for imaging observation characteristic', 'label:', ioc.label.value, 'questionTypeCode:', ioc.questionTypeCode, 'typeCode:', ioc.typeCode, 'io questionTypeCode:', io.questionTypeCode, 'io typeCode:', io.typeCode );
+            const qeIOC = createQualitativeEvaluationWQuestionTypeCode(ioc, io.questionTypeCode || io.typeCode);
+            if (qeIOC) qualitativeEvaluations.push(qeIOC);
+            else console.error('Could not generate qualitative evaluation entity for imaging observation characteristic', 'label:', ioc.label.value, 'questionTypeCode:', ioc.questionTypeCode, 'typeCode:', ioc.typeCode, 'io questionTypeCode:', io.questionTypeCode, 'io typeCode:', io.typeCode );
      
           }
         );
@@ -120,7 +122,7 @@ function getQuantitativeEvaluations(aim) {
         io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.forEach(
           (ioc) => {
             const concept = epadCD2SRCD(ioc.typeCode[0]);
-            quantitativeEvaluations.push({
+            qualitativeEvaluations.push({
               RelationshipType: "CONTAINS",
               ValueType: "CODE",
               ConceptNameCodeSequence: conceptName,
@@ -131,7 +133,7 @@ function getQuantitativeEvaluations(aim) {
       }
     }
   });
-  return quantitativeEvaluations;
+  return qualitativeEvaluations;
 }
 
 function getFindingSites(aim) {
@@ -146,6 +148,55 @@ function getFindingSites(aim) {
   return findingSites;
 }
 
+// using the method David Clunie used for xslt
+function getProcedureReported(aim) {
+  const imageReferenceEntities =
+    aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+      .imageReferenceEntityCollection;
+  let procedureReported;
+  if (imageReferenceEntities && imageReferenceEntities.ImageReferenceEntity[0] && imageReferenceEntities.ImageReferenceEntity[0].imageStudy.imageSeries.modality.codeSystemName === 'DCM')
+  {
+    switch (imageReferenceEntities.ImageReferenceEntity[0].imageStudy.imageSeries.modality.code) {
+      case "CT":
+        procedureReported = {
+          CodeValue: "25045-6",
+          CodingSchemeDesignator: "LN",
+          CodeMeaning: "CT unspecified body region",
+        }
+        break;
+      case "MR": 
+        procedureReported = {
+          CodeValue: "25056-3",
+          CodingSchemeDesignator: "LN",
+          CodeMeaning: "MRI unspecified body region",
+        }
+        break;
+      case "NM": 
+        procedureReported = {
+          CodeValue: "49118-3",
+          CodingSchemeDesignator: "LN",
+          CodeMeaning: "NM unspecified body region",
+        }
+        break;
+      case "PT": 
+        procedureReported = {
+          CodeValue: "44136-0",
+          CodingSchemeDesignator: "LN",
+          CodeMeaning: "PET unspecified body region",
+        }
+        break;
+      default:
+        console.error(`Unrecognised modality ${imageReferenceEntities.ImageReferenceEntity[0].imageStudy.imageSeries.modality.code} when deriving procedure reported - using default code`)
+        procedureReported = {
+          CodeValue: "P0-0099A",
+          CodingSchemeDesignator: "SRT",
+          CodeMeaning: "Imaging procedure",
+        }
+    }
+  }
+  return procedureReported;
+}
+
 function generateMetadataProviderAndToolState(aim) {
   // get image ref
   const {
@@ -154,6 +205,10 @@ function generateMetadataProviderAndToolState(aim) {
   const studyInstanceUID = imageStudy.instanceUid.root;
   const seriesInstanceUID = imageStudy.imageSeries.instanceUid.root;
 
+  const patientID = aim.ImageAnnotationCollection.person.id.value;
+  const patientName = aim.ImageAnnotationCollection.person.name.value;
+  const patientBirthDate = aim.ImageAnnotationCollection.person.birthDate.value;
+  const patientSex = aim.ImageAnnotationCollection.person.sex.value;
   const markupEntities =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
       .markupEntityCollection.MarkupEntity;
@@ -187,6 +242,7 @@ function generateMetadataProviderAndToolState(aim) {
       );
       // physical entities
       tool.data.findingSites = getFindingSites(aim);
+      tool.data.comment = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].comment.value.replace('~~',' \/\/ ') || '';
       if (!toolstate[imageId]) toolstate[imageId] = {};
       if (!toolstate[imageId][tool.type])
         toolstate[imageId][tool.type] = { data: [] };
@@ -220,6 +276,16 @@ function generateMetadataProviderAndToolState(aim) {
             return imageId.split("&frame=")[1]
               ? imageId.split("&frame=")[1]
               : 1;
+          }
+        }
+        if (type === "patientModule") {
+          if (imageIds.includes(imageId)) {
+            return {
+              patientID,
+              patientName,
+              patientBirthDate,
+              patientSex
+            };
           }
         }
         return null;
