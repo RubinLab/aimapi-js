@@ -229,9 +229,15 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   delete aim.imageAnnotations.ImageAnnotation[0]
     .imageAnnotationStatementCollection;
 
+  // get the segment sequence as an array. we are going to use the first one for aim anyway
+  // TODO what to do for multi-segment if there is no series description
+  if (segmentation.SegmentSequence.constructor.name !== "Array") {
+    segmentation.SegmentSequence = [segmentation.SegmentSequence];
+  }
+  
   // add name, comment and segmentation
   aim.imageAnnotations.ImageAnnotation[0].name = {
-    value: segmentation.SeriesDescription,
+    value: segmentation.SeriesDescription || segmentation.SegmentSequence[0].SegmentLabel,
   };
   // TODO there is no way to fill programmed comment without opening the source image
   aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };
