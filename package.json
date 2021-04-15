@@ -14,7 +14,7 @@
     "json",
     "ePAD"
   ],
-  "author": "Emel Alkim",
+  "author": "Emel Alkim, Mete Akdogan",
   "license": "ISC",
   "dependencies": {
     "yarn": "^1.22.4"
