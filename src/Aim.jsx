@@ -405,6 +405,7 @@ class Aim {
     };
     const uId = generateUid();
     obj["xsi:type"] = type;
+    this.imageAnnotations.ImageAnnotation[0]["markupEntityCollection"] = { MarkupEntity: [] };
     this.imageAnnotations.ImageAnnotation[0].markupEntityCollection.MarkupEntity.push(
       obj
     );
@@ -529,7 +530,6 @@ class Aim {
     if (aimType === 1) {
       //if this is an image annotation
       obj["calculationEntityCollection"] = { CalculationEntity: [] };
-      obj["markupEntityCollection"] = { MarkupEntity: [] };
       obj["imageAnnotationStatementCollection"] = {
         ImageAnnotationStatement: [],
       };
