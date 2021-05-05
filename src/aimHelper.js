@@ -132,7 +132,8 @@ function getCalculationEntitiesOfMarkUp(aim, markupUid) {
 
 function getImageAnnotationStatements(aim) {
   return aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-    .imageAnnotationStatementCollection.ImageAnnotationStatement;
+  .imageAnnotationStatementCollection ? aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+    .imageAnnotationStatementCollection.ImageAnnotationStatement : [];
 }
 
 function getCalculationEntities(aim) {
