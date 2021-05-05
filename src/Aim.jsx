@@ -398,6 +398,8 @@ class Aim {
   };
 
   addMarkupEntity = (type, shapeIndex, points, imageUid, frameNum) => {
+    if (!this.imageAnnotations.ImageAnnotation[0]["markupEntityCollection"])
+      this.imageAnnotations.ImageAnnotation[0]["markupEntityCollection"] = { MarkupEntity: [] };
     var obj = {};
     obj["includeFlag"] = { value: true };
     obj["twoDimensionSpatialCoordinateCollection"] = {
@@ -405,6 +407,7 @@ class Aim {
     };
     const uId = generateUid();
     obj["xsi:type"] = type;
+
     this.imageAnnotations.ImageAnnotation[0].markupEntityCollection.MarkupEntity.push(
       obj
     );
@@ -529,7 +532,6 @@ class Aim {
     if (aimType === 1) {
       //if this is an image annotation
       obj["calculationEntityCollection"] = { CalculationEntity: [] };
-      obj["markupEntityCollection"] = { MarkupEntity: [] };
       obj["imageAnnotationStatementCollection"] = {
         ImageAnnotationStatement: [],
       };
