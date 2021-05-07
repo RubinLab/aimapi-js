@@ -73,9 +73,9 @@ function createQualitativeEvaluationWQuestionTypeCode(obj, upperQuestion) {
           const value = obj.characteristicQuantificationCollection.CharacteristicQuantification[0].value.value;
           return {
             RelationshipType: "CONTAINS",
-            ValueType: "NUM",
+            ValueType: "TEXT",
             ConceptNameCodeSequence: conceptName,
-            MeasuredValueSequence: cqToSRMeasuredValueSequence(value),
+            TextValue: value,
           };
       }
     } else {
