@@ -6,7 +6,7 @@ import {
   createOfflineAimSegmentation,
 } from "./aimHelper.js";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper.js";
-import { aim2dicomsr } from "./conversion.js";
+import { aim2dicomsr, dicomsr2aim } from "./conversion.js";
 const aimapi = {
   Aim,
   getImageIdAnnotations,
@@ -15,7 +15,8 @@ const aimapi = {
   createOfflineAimSegmentation,
   createTool,
   linesToPerpendicular,
-  aim2dicomsr
+  aim2dicomsr,
+  dicomsr2aim
 };
 
 export {
@@ -26,6 +27,7 @@ export {
   createOfflineAimSegmentation,
   createTool,
   linesToPerpendicular,
-  aim2dicomsr
+  aim2dicomsr,
+  dicomsr2aim
 };
 export default aimapi;

@@ -1,5 +1,6 @@
 window = {};
 import dcmjs from "dcmjs";
+import btoa from "btoa-lite";
 import { getMarkup, fixAimControlledTerms } from "./aimHelper";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
 export function aim2dicomsr(aim) {
@@ -35,6 +36,52 @@ export function aim2dicomsr(aim) {
     const reportBuffer = dcmjs.data.datasetToBuffer(report.dataset);
 
     return reportBuffer;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+function getToolClass(measurementGroup, dataset, registeredToolClasses) {
+  const shapes = {};
+  measurementGroup.ContentSequence.forEach(cs => {
+    if (cs.ContentSequence && cs.ContentSequence.RelationshipType && cs.ContentSequence.RelationshipType ==='INFERRED FROM') {
+      // it is a shape, use cs.ContentSequence.GraphicData and cs.ContentSequence.GraphicType to define the shape
+      // "GraphicData": [
+      //   97.90877532958984,
+      //   313.48773193359375,
+      //   123.95789337158203,
+      //   294.62457275390625
+      // ],
+      // "GraphicType": "POLYLINE"
+      if (!shapes[cs.ContentSequence.GraphicType]) shapes[cs.ContentSequence.GraphicType] = {};
+      shapes[cs.ContentSequence.GraphicType][btoa(JSON.stringify(cs.ContentSequence.GraphicData))] = cs.ContentSequence.GraphicData;
+    }
+  });
+  console.error('shapes', JSON.stringify(shapes), Object.keys(shapes).length);
+  let type;
+  if (shapes["POLYLINE"]) {
+    // TODO check if lines are perpendicular
+    if (Object.keys(shapes["POLYLINE"]).length === 2) type ='Bidirectional';
+    if (Object.keys(shapes["POLYLINE"]).length === 1) type ='Length';
+  }
+  // find which class it is by checking the shapes
+  return registeredToolClasses.find(tc =>
+    tc.toolType === type
+  );
+
+}
+
+export function dicomsr2aim(srBuffer) {
+  try {
+    const dicomDict = dcmjs.data.DicomMessage.readFile(srBuffer);
+    const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
+
+    const { MeasurementReport } = dcmjs.adapters.Cornerstone;
+    const toolstate = MeasurementReport.generateToolState(dataset, {getToolClass});
+    console.error('toolstate', JSON.stringify(toolstate));
+    
+    return undefined;
   } catch (err) {
     console.error(err);
     return null;

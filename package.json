@@ -17,6 +17,7 @@
   "author": "Emel Alkim",
   "license": "ISC",
   "dependencies": {
+    "btoa-lite": "^1.0.0",
     "dcmjs": "^0.12.4",
     "yarn": "^1.22.4"
   },
