@@ -14,12 +14,6 @@ function createLine(data, points, calculations) {
   data.length = 0;
   if (calculations) {
     for (let i = 0; i < calculations.length; i += 1) {
-      console.error(
-        "calc",
-        calculations[i].type,
-        calculations[i].value,
-        calculations[i]
-      );
       // TODO check with Mete
       if (calculations[i].type === "Length") {
         // !! no unit in report classes
@@ -45,12 +39,6 @@ function createBidirectional(data, points, calculations) {
   data.handles.textBox.y = points[0].y.value;
   if (calculations) {
     for (let i = 0; i < calculations.length; i += 1) {
-      console.error(
-        "calc",
-        calculations[i].type,
-        calculations[i].value,
-        calculations[i]
-      );
       // TODO check with Mete
       if (calculations[i].type === "LongAxis") {
         data.longestDiameter = parseFloat(calculations[i].value);
@@ -132,7 +120,6 @@ function createCornerstoneTool(
   data.aimId = markup.aimUid;
   data.invalidated = invalidated;
   createMethod(data, markup.coordinates, markup.calculations);
-  console.error("data", data);
   return data;
 }
 
