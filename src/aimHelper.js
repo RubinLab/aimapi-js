@@ -7,6 +7,198 @@ const enumAimType = {
   studyAnnotation: 3,
 };
 
+function replaceInJson(obj, find, replace) {
+  var re = new RegExp(find,"g");
+  return JSON.parse(JSON.stringify(obj).replace(re, replace));
+}
+function replaceCD(orjCD) {
+  if (replaceCDMap[orjCD.code]) {
+    return replaceCDMap[orjCD.code];
+  }
+  return orjCD;
+}
+const replaceCDMap = {
+  "RID58": {
+    "code": "10200004",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "liver","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID34539": {
+    "code": "60046008",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "pleural effusion","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID29380": {
+    "code": "55603005",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "adipose tissue","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID35751": {
+    "code": "280541000",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "orbital cavity","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID28472": {
+    "code": "52101004",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Present","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID39162": {
+    "code": "255314001",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Progressive","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "S73": {
+    "code": "7147002",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "New","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "S74": {
+    "code": "723506003",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Resolved","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID6055": {
+    "code": "C113842",
+    "codeSystemName": "NCIt",
+    "iso:displayName":{"value": "Enhancing Lesion","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "RID6056": {
+    "code": "C81175",
+    "codeSystemName": "NCIt",
+    "iso:displayName":{"value": "Nonenhancing","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "G-A185": {
+    "code": "103339001",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Long Axis","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "G-A186": {
+    "code": "103340004",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Short Axis","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "G-D7FE": {
+    "code": "410668003",
+    "codeSystemName": "SCT",
+    "iso:displayName":{"value": "Length","xmlns:iso":"uri:iso.org:21090"}
+  },
+
+}
+const questionTypeCodeMap = {
+  "Type": {
+    "code":"RDETBD3",
+    "codeSystemName":"RADELEMENT",
+    "iso:displayName":{"value":"Lesion Type","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "Lesion Status": {
+    "code":"RDE54",
+    "codeSystemName":"RADELEMENT",
+    "iso:displayName":{"value":"Lesion Status","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "Lesion Enhancement": {
+    "code":"RDETBD4",
+    "codeSystemName":"RADELEMENT",
+    "iso:displayName":{"value":"Lesion Enhancement","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "Lesion Quality": {
+    "code":"RDETBD1",
+    "codeSystemName":"RADELEMENT",
+    "iso:displayName":{"value":"Lesion Quality","xmlns:iso":"uri:iso.org:21090"}
+  },
+  "Timepoint": {
+    "code":"RDETBD2",
+    "codeSystemName":"RADELEMENT",
+    "iso:displayName":{"value":"Timepoint","xmlns:iso":"uri:iso.org:21090"}
+  }
+}
+function replaceTypeCode(typeCodeArray) {
+  for (let i = 0; i < typeCodeArray.length; i += 1 ) {
+    typeCodeArray[i] = replaceCD(typeCodeArray[i]);
+  }
+  return typeCodeArray;
+}
+
+export function fixAimControlledTerms(aim) {
+  try {
+    // replace Radlex and Radelement for all aims
+    aim = replaceInJson(aim, 'RadLex', 'RADLEX');
+    aim = replaceInJson(aim, 'Radelement', 'RADELEMENT');
+    const imageAnnotation = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0];
+    // if template is RECIST_v2 fix the controlled terms
+    if (imageAnnotation.typeCode[0].code === 'RECIST_v2') {
+      // fix typecodes and add question types (need to be modified after the radelements are finalized)
+      if (imageAnnotation.imagingPhysicalEntityCollection) {
+        let ipes = [];
+        if (Array.isArray(imageAnnotation.imagingPhysicalEntityCollection.ImagingPhysicalEntity)) {
+          ipes = imageAnnotation.imagingPhysicalEntityCollection.ImagingPhysicalEntity;
+        } else {
+          ipes.push(imageAnnotation.imagingPhysicalEntityCollection.ImagingPhysicalEntity);
+        }
+        ipes.forEach((ipe) => {
+          ipe.typeCode = replaceTypeCode(ipe.typeCode);
+          if (!ipe.questionTypeCode) {
+            ipe.questionTypeCode = questionTypeCodeMap[ipe.label.value];
+          }
+          if (ipe.imagingPhysicalEntityCharacteristicCollection) {
+            const ipcs =
+              ipe.imagingPhysicalEntityCharacteristicCollection.ImagingPhysicalEntityCharacteristic;
+            ipcs.forEach((ipc) => {
+              ipc.typeCode = replaceTypeCode(ipc.typeCode);
+              if (!ipc.questionTypeCode) {
+                ipc.questionTypeCode = [questionTypeCodeMap[ipc.label.value]];
+              }
+            });
+          }
+        });
+      }
+  
+      if (imageAnnotation.imagingObservationEntityCollection) {
+        const ioes = imageAnnotation.imagingObservationEntityCollection.ImagingObservationEntity;
+        ioes.forEach((ioe) => {
+          // imagingObservationEntity can have both ImagingObservationCharacteristic and imagingPhysicalEntityCharacteristic
+          ioe.typeCode = replaceTypeCode(ioe.typeCode);
+          if (!ioe.questionTypeCode) {
+            ioe.questionTypeCode = [questionTypeCodeMap[ioe.label.value]];
+          }
+          if (ioe.imagingObservationCharacteristicCollection) {
+            const iocs =
+              ioe.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic;
+            iocs.forEach((ioc) => {
+              ioc.typeCode = replaceTypeCode(ioc.typeCode);
+              if (!ioc.questionTypeCode) {
+                ioc.questionTypeCode = [questionTypeCodeMap[ioc.label.value]];
+              }
+            });
+          }
+          let ipcs = [];
+          if (ioe.imagingPhysicalEntityCharacteristicCollection) {
+            ipcs =
+              ioe.imagingPhysicalEntityCharacteristicCollection.ImagingPhysicalEntityCharacteristic;
+            ipcs.forEach((ipc) => {
+              ipc.typeCode = replaceTypeCode(ipc.typeCode);
+              if (!ipc.questionTypeCode) {
+                ipc.questionTypeCode = [questionTypeCodeMap[ipc.label.value]]
+              }
+            });
+          }
+        });
+      }
+    }
+    // fix calculations for all aims
+    if (imageAnnotation.calculationEntityCollection) {
+      const calcs = imageAnnotation.calculationEntityCollection.CalculationEntity;
+      calcs.forEach((calc) => {
+        calc.typeCode = replaceTypeCode(calc.typeCode);
+      });
+    }
+    return aim;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 export function getImageIdAnnotations(aims) {
   let imageIdSpecificMarkups = {};
   try {

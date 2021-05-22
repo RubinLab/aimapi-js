@@ -1,9 +1,10 @@
 window = {};
 import dcmjs from "dcmjs";
-import { getMarkup } from "./aimHelper";
+import { getMarkup, fixAimControlledTerms } from "./aimHelper";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
 export function aim2dicomsr(aim) {
   try {
+    aim = fixAimControlledTerms(aim);
     // check if it has image
     // TODO how about study/series aims @Clunie
 
