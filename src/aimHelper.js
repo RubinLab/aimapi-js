@@ -1,7 +1,9 @@
 import Aim from "./Aim.jsx";
 
+const IMAGE_LIBRARY = "111028";
+const PERSON_OBSERVER = "121008";
 // moved from aimEditor.jsx
-const enumAimType = {
+export const enumAimType = {
   imageAnnotation: 1,
   seriesAnnotation: 2,
   studyAnnotation: 3,
@@ -446,7 +448,7 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   return { aim };
 }
 // moved from aimEditor.jsx
-function addUserToSeedData(seedData, userInfo) {
+export function addUserToSeedData(seedData, userInfo) {
   // this is ui specific, should be changed
   if (userInfo) {
     seedData.user = userInfo;
@@ -571,4 +573,100 @@ function getSingleImageDataFromSeg(image) {
     sopClassUid: refImage.ReferencedSOPClassUID || "",
     sopInstanceUid: refImage.ReferencedSOPInstanceUID || "",
   };
+}
+
+export function getAimImageDataFromSR(srDataset, trackingIdentifier, comment) {
+  var obj = {};
+  obj.aim = {};
+  obj.study = {};
+  obj.series = {};
+  obj.equipment = {};
+  obj.person = {};
+  obj.image = [];
+  const { aim, study, series, equipment, person } = obj;
+  // seg data is coming in dcmjs format
+  aim.studyInstanceUid = srDataset.StudyInstanceUID || "";
+  aim.seriesInstanceUid = srDataset.SeriesInstanceUID || "";
+  // I could get these from the dataset but adapter retrieves it and puts it in the tool anyways
+  aim.name = { value: trackingIdentifier };
+  // parse comment and fill in the programmed comment parts
+  const commentParts = comment.split("\/\/");
+  if (commentParts[0]) {
+    const programmedCommentParts = commentParts[0].split("\/");
+    // don't know what to do otherwise
+    if (programmedCommentParts.length === 4) {
+      obj.series.modality = programmedCommentParts[0].trim();
+      obj.series.description = programmedCommentParts[1].trim();
+      obj.series.instanceNumber = programmedCommentParts[2].trim();
+      obj.series.number = programmedCommentParts[3].trim();
+    }
+  }
+  aim.comment = { value: commentParts[1] ? commentParts[1].trim() : "" };
+  study.instanceUid = srDataset.StudyInstanceUID || "";
+  // would these be filled in?
+  study.startTime = srDataset.StudyTime || "";
+  study.startDate = srDataset.StudyDate || "";
+  series.instanceUid = getReferencedSeriesFromSR(srDataset) || "";
+  console.log('series uid', series.instanceUid );
+  study.accessionNumber = srDataset.AccessionNumber || "";
+
+  obj.image.push(getSingleImageDataFromSR(srDataset));
+  equipment.manufacturerName = srDataset.Manufacturer || "";
+  equipment.manufacturerModelName = srDataset.ManufacturerModelName || "";
+  equipment.softwareVersion = srDataset.SoftwareVersions || "";
+  person.sex = srDataset.PatientSex || "";
+  person.name = srDataset.PatientName || "";
+  person.patientId = srDataset.PatientID || "";
+  person.birthDate = srDataset.PatientBirthDate || "";
+  return obj;
+}
+
+function getSingleImageDataFromSR(image) {
+  const refImage = getRefImageFromSR(image);
+  return {
+    sopClassUid: refImage.ReferencedSOPClassUID || "",
+    sopInstanceUid: refImage.ReferencedSOPInstanceUID || "",
+  };
+}
+
+// from dcmjs helpers
+function toArray(x) {
+  return Array.isArray(x) ? x : [x];
+};
+
+function getRefImageFromSR(dataset) {
+  console.log('in', toArray(dataset.ContentSequence));
+  if (dataset.ContentSequence) {
+    const imageLibrary = toArray(dataset.ContentSequence).find(
+      group => group.ConceptNameCodeSequence.CodeValue === IMAGE_LIBRARY
+    );
+    console.log('ss', imageLibrary);
+    if (imageLibrary.ContentSequence && imageLibrary.ContentSequence.ContentSequence && imageLibrary.ContentSequence.ContentSequence.ReferencedSOPSequence)
+      return imageLibrary.ContentSequence.ContentSequence.ReferencedSOPSequence;
+  }
+  return {};
+}
+
+export function getUserFromSR(dataset) {
+  // TODO loginname
+  if (dataset.ContentSequence) {
+    const annotator = toArray(dataset.ContentSequence).find(
+      group => group.ConceptNameCodeSequence.CodeValue === PERSON_OBSERVER
+    );
+    return {
+      loginName: annotator.PersonName,
+      name: annotator.PersonName,
+    };
+  }
+  return {
+    loginName: 'NA',
+    name: 'NA',
+  };
+}
+
+export function getReferencedSeriesFromSR(dataset) {
+  if (dataset.CurrentRequestedProcedureEvidenceSequence && dataset.CurrentRequestedProcedureEvidenceSequence.ReferencedSeriesSequence) {
+    return dataset.CurrentRequestedProcedureEvidenceSequence.ReferencedSeriesSequence.SeriesInstanceUID;
+  }
+  return '';
 }

@@ -23,7 +23,7 @@ class Aim {
     this["xsi:schemaLocation"] = aimConf["xsi:schemaLocation"];
     this.uniqueIdentifier = "";
     this.studyInstanceUid = { root: this.temp.aim.studyInstanceUid };
-    this.seriesInstanceUid = { root: generateUid() };
+    this.seriesInstanceUid = { root: this.temp.aim.seriesInstanceUid || generateUid() };
     this.accessionNumber = { value: this.temp.study.accessionNumber };
     this.dateTime = { value: this.getDate() };
     this.user = this._createUser(this.temp.user);

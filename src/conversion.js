@@ -1,14 +1,15 @@
 window = {};
 import dcmjs from "dcmjs";
 import btoa from "btoa-lite";
-import { getMarkup, fixAimControlledTerms } from "./aimHelper";
+import Aim from "./Aim.jsx";
+import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR, addUserToSeedData, enumAimType } from "./aimHelper";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
 export function aim2dicomsr(aim) {
   try {
     aim = fixAimControlledTerms(aim);
     // check if it has image
     // TODO how about study/series aims @Clunie
-
+    // TODO fill in study date/time??
     const {
       toolstate,
       metaDataProvider,
@@ -80,8 +81,26 @@ export function dicomsr2aim(srBuffer) {
     const { MeasurementReport } = dcmjs.adapters.Cornerstone;
     const toolstate = MeasurementReport.generateToolState(dataset, {getToolClass});
     console.error('toolstate', JSON.stringify(toolstate));
+    // get bidirectional for now
+    const tool = toolstate.Bidirectional[0];
+    // create base aim
+    const seedData = getAimImageDataFromSR(dataset, tool.trackingIdentifier, tool.comment); 
     
-    return undefined;
+    addUserToSeedData(seedData, getUserFromSR(dataset));
+    // ?? should we get aim uid? should it be the uid of the dicom sr?
+    const aim = new Aim(seedData, enumAimType.imageAnnotation, undefined, tool.trackingUniqueIdentifier);
+    console.log('generated aim', JSON.stringify(aim.getAimJSON()));
+    // fastify.createAimMarkups(aim, markupsToSave);
+    // // add qualitative evaluations
+
+    // // add shapes
+    // const markupsToSave = el.rois.map((roi) => fastify.formMarupksToSave(roi));
+        
+    // add calculations
+
+    // add annotation statements
+    
+    return aim.getAimJSON();
   } catch (err) {
     console.error(err);
     return null;
