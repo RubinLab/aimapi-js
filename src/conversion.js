@@ -22,6 +22,7 @@ export function aim2dicomsr(aim) {
       qualitativeEvaluations,
       PersonName: aim.ImageAnnotationCollection.user.name.value,
       ProcedureReported: procedureReported,
+      SeriesInstanceUID: aim.ImageAnnotationCollection.seriesInstanceUid.root,
     };
     // TODO add loginname
     const report = MeasurementReport.generateReport(
@@ -294,14 +295,13 @@ function generateMetadataProviderAndToolState(aim) {
     markups = linesToPerpendicular(markups);
     markups.forEach((markup) => {
       const tool = createTool(markup);
-      tool.data.identifier = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name.value; // add type to the end? or shape uid
+      tool.data.trackingIdentifier = aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].name.value; // add type to the end? or shape uid
       if (
         aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
           .trackingUniqueIdentifier
       )
         tool.data.trackingUniqueIdentifier =
           aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].trackingUniqueIdentifier.root;
-  
       // template
       tool.data.finding = epadCD2SRCD(
         aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
