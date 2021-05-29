@@ -2,7 +2,7 @@ window = {};
 import dcmjs from "dcmjs";
 import btoa from "btoa-lite";
 import Aim from "./Aim.jsx";
-import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR, addUserToSeedData, enumAimType } from "./aimHelper";
+import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR, addUserToSeedData, enumAimType, createAimMarkups, storeMarkupsToBeSaved } from "./aimHelper";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
 export function aim2dicomsr(aim) {
   try {
@@ -90,16 +90,19 @@ export function dicomsr2aim(srBuffer) {
     addUserToSeedData(seedData, getUserFromSR(dataset));
     // ?? should we get aim uid? should it be the uid of the dicom sr?
     const aim = new Aim(seedData, enumAimType.imageAnnotation, undefined, tool.trackingUniqueIdentifier);
+    const tools = [...toolstate.Length, ...toolstate.Freehand, ...toolstate.Bidirectional, ...toolstate.EllipticalRoi, ...toolstate.ArrowAnnotate];
+    const markupsToSave = {};
+    let shapeIndex = 1;
+    tools.map(tool => { 
+      storeMarkupsToBeSaved(tool.sopInstanceUid, {type: tool.toolType.toLowerCase(), markup: tool, shapeIndex: shapeIndex++, imageId: tool.sopInstanceUid, frameNum:tool.frameIndex }, markupsToSave);
+      // two shapes for bidirectional
+      if (tool.toolType.toLowerCase() === 'bidirectional') shapeIndex++; 
+    });
+    // add shapes, calculations and annotation statements
+    createAimMarkups(aim, markupsToSave);
     console.log('generated aim', JSON.stringify(aim.getAimJSON()));
-    // fastify.createAimMarkups(aim, markupsToSave);
-    // // add qualitative evaluations
 
-    // // add shapes
-    // const markupsToSave = el.rois.map((roi) => fastify.formMarupksToSave(roi));
-        
-    // add calculations
-
-    // add annotation statements
+    // add qualitative evaluations
     
     return aim.getAimJSON();
   } catch (err) {

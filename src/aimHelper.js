@@ -479,8 +479,11 @@ function getDatasetFromBlob(segBlob, imageIdx) {
   });
 }
 // moved from aimEditor.jsx
-function addSegmentationToAim(aim, segEntityData, segStats) {
-  const segId = aim.createSegmentationEntity(segEntityData);
+// updated
+// TODO SUV??
+export function addSegmentationToAim(aim, segEntityData, segStats) {
+  const segId = aim.createSegmentationEntity(segEntityData).root;
+
   const { volume, min, max, mean, stdDev } = segStats;
   if (mean) {
     const meanId = aim.createMeanCalcEntity({ mean, unit: "[hnsf'U]" });
@@ -499,9 +502,13 @@ function addSegmentationToAim(aim, segEntityData, segStats) {
     aim.createImageAnnotationStatement(2, segId, maxId);
   }
   if (volume) {
-    const volumeId = aim.createMaxCalcEntity({ volume, unit: "mm3" });
+    const volumeId = aim.createVolumeCalcEntity({
+      value: volume,
+      unit: "mm3",
+    });
     aim.createImageAnnotationStatement(2, segId, volumeId);
   }
+  return segEntityData.sopInstanceUid;
 }
 // new method inspired by moved getSegmentationEntityData from aimEditor.jsx
 function getSegmentationEntityDataFromSeg(dataset) {
@@ -669,4 +676,202 @@ export function getReferencedSeriesFromSR(dataset) {
     return dataset.CurrentRequestedProcedureEvidenceSequence.ReferencedSeriesSequence.SeriesInstanceUID;
   }
   return '';
+}
+
+function addPolygonToAim(aim, polygon, shapeIndex, imageId, frameNum) {
+  const { points } = polygon.handles;
+  const markupId = aim.addMarkupEntity(
+    "TwoDimensionPolyline",
+    shapeIndex,
+    points,
+    imageId,
+    frameNum
+  );
+
+  // find out the unit about statistics to write to aim
+  let unit, mean, stdDev, min, max;
+  if (polygon.meanStdDev) {
+    ({ mean, stdDev, min, max } = polygon.meanStdDev);
+    unit = "hu";
+  } else if (polygon.meanStdDevSUV) {
+    ({ mean, stdDev, min, max } = polygon.meanStdDev);
+    unit = "suv";
+  }
+
+  const meanId = aim.createMeanCalcEntity({ mean, unit });
+  aim.createImageAnnotationStatement(1, markupId, meanId);
+
+  const stdDevId = aim.createStdDevCalcEntity({ stdDev, unit });
+  aim.createImageAnnotationStatement(1, markupId, stdDevId);
+
+  const minId = aim.createMinCalcEntity({ min, unit });
+  aim.createImageAnnotationStatement(1, markupId, minId);
+
+  const maxId = aim.createMaxCalcEntity({ max, unit });
+  aim.createImageAnnotationStatement(1, markupId, maxId);
+}
+
+function addPointToAim(aim, point, shapeIndex, imageId, frameNum) {
+  const { end } = point.handles;
+  aim.addMarkupEntity(
+    "TwoDimensionPoint",
+    shapeIndex,
+    [end],
+    imageId,
+    frameNum
+  );
+}
+
+function addLineToAim(aim, line, shapeIndex, imageId, frameNum) {
+  const { start, end } = line.handles;
+  const markupId = aim.addMarkupEntity(
+    "TwoDimensionMultiPoint",
+    shapeIndex,
+    [start, end],
+    imageId,
+    frameNum
+  );
+
+  const lengthId = aim.createLengthCalcEntity({
+    value: line.length,
+    unit: line.unit,
+  });
+  aim.createImageAnnotationStatement(1, markupId, lengthId);
+}
+
+function addCircleToAim(aim, circle, shapeIndex, imageId, frameNum) {
+  const { start, end } = circle.handles;
+  const markupId = aim.addMarkupEntity(
+    "TwoDimensionCircle",
+    shapeIndex,
+    [start, end],
+    imageId,
+    frameNum
+  );
+
+  let unit;
+  if (circle.unit === "HU") unit = "hu";
+  else if (circle.unit === "SUV") unit = "suv";
+
+  const { mean, stdDev, min, max } = circle.cachedStats;
+
+  const meanId = aim.createMeanCalcEntity({ mean, unit });
+  aim.createImageAnnotationStatement(1, markupId, meanId);
+
+  const stdDevId = aim.createStdDevCalcEntity({ stdDev, unit });
+  aim.createImageAnnotationStatement(1, markupId, stdDevId);
+
+  const minId = aim.createMinCalcEntity({ min, unit });
+  aim.createImageAnnotationStatement(1, markupId, minId);
+
+  const maxId = aim.createMaxCalcEntity({ max, unit });
+  aim.createImageAnnotationStatement(1, markupId, maxId);
+
+  // aim.add;
+}
+
+function addBidirectionalToAim(
+  aim,
+  bidirectional,
+  shapeIndex,
+  imageId,
+  frameNum,
+  getAxisOfBidirectional
+) {
+  if (!bidirectional.longestDiameter || !bidirectional.shortestDiameter) {
+    const { longAxis, shortAxis } = getAxisOfBidirectional(bidirectional);
+
+    // add longAxis
+    const longAxisMarkupId = aim.addMarkupEntity(
+      "TwoDimensionMultiPoint",
+      shapeIndex,
+      [longAxis.start, longAxis.end],
+      imageId,
+      frameNum
+    );
+    console.error('idd', longAxisMarkupId);
+    const longAxisLengthId = aim.createLongAxisCalcEntity({
+      value: longAxis.length,
+      unit: "mm",
+    });
+    aim.createImageAnnotationStatement(1, longAxisMarkupId, longAxisLengthId);
+
+    // add shortAxis
+    const shortAxisMarkupId = aim.addMarkupEntity(
+      "TwoDimensionMultiPoint",
+      shapeIndex + 1,
+      [shortAxis.start, shortAxis.end],
+      imageId,
+      frameNum
+    );
+    const shortAxisLengthId = aim.createShortAxisCalcEntity({
+      value: shortAxis.length,
+      unit: "mm",
+    });
+    aim.createImageAnnotationStatement(1, shortAxisMarkupId, shortAxisLengthId);
+  } else {
+    // first shape coming from cornerstone tools is long axis
+    const longAxisMarkupId = aim.addMarkupEntity(
+      "TwoDimensionMultiPoint",
+      shapeIndex,
+      [bidirectional.handles.start, bidirectional.handles.end],
+      imageId,
+      frameNum
+    );
+    console.error('idd', longAxisMarkupId);
+    const longAxisLengthId = aim.createLongAxisCalcEntity({
+      value: bidirectional.longestDiameter,
+      unit: "mm",
+    });
+    aim.createImageAnnotationStatement(1, longAxisMarkupId, longAxisLengthId);
+
+    // second shape coming from cornerstone tools is long axis
+    const shortAxisMarkupId = aim.addMarkupEntity(
+      "TwoDimensionMultiPoint",
+      shapeIndex + 1,
+      [bidirectional.handles.perpendicularStart, bidirectional.handles.perpendicularEnd],
+      imageId,
+      frameNum
+    );
+    const shortAxisLengthId = aim.createShortAxisCalcEntity({
+      value: bidirectional.shortestDiameter,
+      unit: "mm",
+    });
+    aim.createImageAnnotationStatement(1, shortAxisMarkupId, shortAxisLengthId);
+  }
+}
+
+export function createAimMarkups(aim, markupsToSave) {
+  Object.entries(markupsToSave).forEach(([key, values]) => {
+    values.map((value) => {
+      const { type, markup, shapeIndex, imageId, frameNum } = value;
+      switch (type.toLowerCase()) {
+        case "point":
+          addPointToAim(aim, markup, shapeIndex, imageId, frameNum);
+          break;
+        case "line":
+          addLineToAim(aim, markup, shapeIndex, imageId, frameNum);
+          break;
+        case "circle":
+          addCircleToAim(aim, markup, shapeIndex, imageId, frameNum);
+          break;
+        case "polygon":
+          addPolygonToAim(aim, markup, shapeIndex, imageId, frameNum);
+          break;
+        case "bidirectional":
+          addBidirectionalToAim(
+            aim,
+            markup,
+            shapeIndex,
+            imageId,
+            frameNum
+          );
+      }
+    });
+  });
+}
+
+export function storeMarkupsToBeSaved(imageId, markupData, markupsToSave) {
+  if (!markupsToSave[imageId]) markupsToSave[imageId] = [];
+  markupsToSave[imageId].push(markupData);
 }
