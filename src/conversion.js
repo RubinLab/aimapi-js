@@ -2,8 +2,10 @@ window = {};
 import dcmjs from "dcmjs";
 import btoa from "btoa-lite";
 import Aim from "./Aim.jsx";
-import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR, addUserToSeedData, enumAimType, createAimMarkups, storeMarkupsToBeSaved } from "./aimHelper";
+import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR, addUserToSeedData, enumAimType, createAimMarkups, storeMarkupsToBeSaved, getQualitativeEvaluationsFromSR } from "./aimHelper";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
+import { generateUid } from "../utils/aid";
+import RECIST_v2 from "../templates/RECIST_v2_radelement";
 export function aim2dicomsr(aim) {
   try {
     aim = fixAimControlledTerms(aim);
@@ -76,34 +78,66 @@ function getToolClass(measurementGroup, dataset, registeredToolClasses) {
 
 export function dicomsr2aim(srBuffer) {
   try {
+    // load the templates
+    // just RECIST_v2 for now
+    const templates = {};
+    templates['RECIST_v2'] =  RECIST_v2;//JSON.parse(fs.readFileSync('../templates/RECIST_v2_radelement.json'));
+
     const dicomDict = dcmjs.data.DicomMessage.readFile(srBuffer);
     const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
 
     const { MeasurementReport } = dcmjs.adapters.Cornerstone;
     const toolstate = MeasurementReport.generateToolState(dataset, {getToolClass});
     console.error('toolstate', JSON.stringify(toolstate));
-    // get bidirectional for now
-    const tool = toolstate.Bidirectional[0];
-    // create base aim
-    const seedData = getAimImageDataFromSR(dataset, tool.trackingIdentifier, tool.comment); 
-    
-    addUserToSeedData(seedData, getUserFromSR(dataset));
-    // ?? should we get aim uid? should it be the uid of the dicom sr?
-    const aim = new Aim(seedData, enumAimType.imageAnnotation, undefined, tool.trackingUniqueIdentifier);
     const tools = [...toolstate.Length, ...toolstate.Freehand, ...toolstate.Bidirectional, ...toolstate.EllipticalRoi, ...toolstate.ArrowAnnotate];
     const markupsToSave = {};
     let shapeIndex = 1;
+    const findings = {};
+    const findingSites = {};
+    const names = [];
+    const comments = [];
+    const uniqueIdentifiers = [];
     tools.map(tool => { 
       storeMarkupsToBeSaved(tool.sopInstanceUid, {type: tool.toolType.toLowerCase(), markup: tool, shapeIndex: shapeIndex++, imageId: tool.sopInstanceUid, frameNum:tool.frameIndex }, markupsToSave);
+      if (!names.includes(tool.trackingIdentifier)) names.push(tool.trackingIdentifier);
+      if (!uniqueIdentifiers.includes(tool.trackingUniqueIdentifier)) uniqueIdentifiers.push(tool.trackingUniqueIdentifier);
+      if (!comments.includes(tool.comment)) comments.push(tool.comment);
+      if (!findings[tool.finding.CodeValue]) findings[tool.finding.CodeValue] = tool.finding;
+      tool.findingSites.forEach(findingSite => { if (!findingSites[findingSite.CodeValue]) findingSites[findingSite.CodeValue] = findingSite; }); 
       // two shapes for bidirectional
       if (tool.toolType.toLowerCase() === 'bidirectional') shapeIndex++; 
     });
-    // add shapes, calculations and annotation statements
-    createAimMarkups(aim, markupsToSave);
-    console.log('generated aim', JSON.stringify(aim.getAimJSON()));
-
-    // add qualitative evaluations
     
+    // add qualitative evaluations
+    // get template first (finding), there is no way to differentiate between characteristics and observations otherwise
+    if (Object.keys(findings).length === 1) { // this should be the case
+      if (names.length === 1 && uniqueIdentifiers.length === 1 && comments.length <= 1) {
+        // get the seed from the first tool
+        const tool = Object.values(tools)[0];
+        // create base aim
+        const seedData = getAimImageDataFromSR(dataset, tool.trackingIdentifier, tool.comment); 
+        seedData.aim.typeCode = SRCD2epadCD(Object.values(findings)[0]);
+        addUserToSeedData(seedData, getUserFromSR(dataset));
+        // ?? should we get aim uid? should it be the uid of the dicom sr?
+        const aim = new Aim(seedData, enumAimType.imageAnnotation, undefined, tool.trackingUniqueIdentifier);
+        // add shapes, calculations and annotation statements
+        createAimMarkups(aim, markupsToSave);
+        console.log('generated aim', JSON.stringify(aim.getAimJSON()));
+        // default template is ROI
+        const template = templates[Object.keys(findings)[0]] || templates['ROI'];
+        const aimJSON = addQualitativeEvaluations(aim.getAimJSON(), template, findingSites, dataset);
+        console.log('edited aim', JSON.stringify(aimJSON));
+        return aimJSON;
+      } else {
+        console.error('DICOM SR with multiple annotations are not supported!', names, uniqueIdentifiers, comments);
+      }
+
+    } else {
+      console.error('DICOM SR with multiple findings is not supported!');
+      
+    }
+    // physical entity (finding site)
+    // should we return an array??  
     return aim.getAimJSON();
   } catch (err) {
     console.error(err);
@@ -111,11 +145,139 @@ export function dicomsr2aim(srBuffer) {
   }
 }
 
+function createEntityCharacteristic(typeCode, label) {
+  if (label === 'Timepoint') {
+    // this is quantification!!!
+    // quite manual/static right now. can we make it more generic
+    return {
+      "typeCode": [
+        {
+            "code": "S90",
+            "codeSystemName": "99EPAD",
+            "codeSystemVersion": "1.0",
+            "iso:displayName": {
+                "value": "FU Number (0=Baseline)",
+                "xmlns:iso": "uri:iso.org:21090"
+            }
+        }
+      ],
+      "annotatorConfidence": {
+          "value": 0
+      },
+      label: { value: label },
+      "characteristicQuantificationCollection": {
+        "CharacteristicQuantification": [
+            {
+                "type": "Nominal",
+                "xsi:type": "Scale",
+                "annotatorConfidence": {
+                    "value": 0
+                },
+                "label": {
+                    "value": "Timepoint"
+                },
+                "valueLabel": {
+                    "value": typeCode === '0' ? "Baseline" : "Followup" 
+                },
+                "value": {
+                    "value": typeCode
+                }
+            }
+        ]
+      }
+    }
+  }
+  return {
+    typeCode: [ SRCD2epadCD(typeCode) ],
+    "annotatorConfidence": {
+        "value": 0
+    },
+    label: { value: label },
+  }
+}
+
+function createEntity(typeCode, label) {
+  return {
+    typeCode: [ SRCD2epadCD(typeCode) ],
+    "annotatorConfidence": {
+        "value": 0
+    },
+    label: { value: label },
+    "uniqueIdentifier": {
+      "root": generateUid()
+    },
+  }
+}
+
+function createQualitativeEvaluationsMap(srQualitativeEvaluations) {
+  const map = {};
+  srQualitativeEvaluations.forEach(qualEval => {
+    switch (qualEval.ValueType) {
+      case "CODE":
+        map[qualEval.ConceptNameCodeSequence.CodeMeaning] = qualEval.ConceptCodeSequence;
+        break;
+      case "TEXT":
+        map[qualEval.ConceptNameCodeSequence.CodeMeaning] = qualEval.TextValue;
+        break;
+      default:
+        console.error(`ValueType other than CODE and TEXT is not supported. Found ${qualEval.ValueType}`);
+    }
+  })
+  return map;
+}
+
+function getSRLabel(obj) {
+  if (obj.QuestionType)
+    return obj.QuestionType.codeMeaning;
+  return obj.label;
+}
+
+function addQualitativeEvaluations(aim, template, findingSites, srDataset) {
+  // get qualitative evaluations from the dataset and create a map
+  const srQualitativeEvaluations = getQualitativeEvaluationsFromSR(srDataset);
+  const qualitativeEvaluations = createQualitativeEvaluationsMap(srQualitativeEvaluations);
+  template.TemplateContainer.Template[0].Component.forEach(component => {
+    if (component.AnatomicEntity) { // finding site
+      if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection)
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection = { ImagingPhysicalEntity : [] };
+      if (Object.keys(findingSites).length !== 1) {
+        console.warning('Multiple finding sites are not supported. Getting only the first one');
+      }
+      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection.ImagingPhysicalEntity.push(createEntity(Object.values(findingSites)[0], component.label));
+      // TODO imagingPhysicalEntityCharacteristicCollection
+    } else if (component.ImagingObservation) {
+      if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection)
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection = { ImagingObservationEntity : [] };    
+      const io = createEntity(qualitativeEvaluations[getSRLabel(component)], component.label);
+      // TODO imagingPhysicalEntityCharacteristicCollection
+      if (component.ImagingObservation.ImagingObservationCharacteristic) {
+        component.ImagingObservation.ImagingObservationCharacteristic.forEach(characteristic => {
+          if (!io.imagingObservationCharacteristicCollection)
+            io.imagingObservationCharacteristicCollection = { ImagingObservationCharacteristic : [] };    
+          io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.push(createEntityCharacteristic(qualitativeEvaluations[getSRLabel(characteristic)], characteristic.label));
+        });
+      }
+      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection.ImagingObservationEntity.push(io);
+    }
+  });
+  return aim;
+}
+
 function epadCD2SRCD(typecode) {
   return {
     CodeValue: typecode.code,
     CodingSchemeDesignator: typecode.codeSystemName,
     CodeMeaning: typecode["iso:displayName"].value,
+    CodingSchemeVersion: typecode.codeSystemVersion || undefined
+  };
+}
+
+function SRCD2epadCD(typecode) {
+  return {
+    code: typecode.CodeValue,
+    codeSystemName: typecode.CodingSchemeDesignator,
+    "iso:displayName": { value: typecode.CodeMeaning, "xmlns:iso": "uri:iso.org:21090"},
+    codeSystemVersion: typecode.CodingSchemeVersion || undefined
   };
 }
 

@@ -2,6 +2,7 @@ import Aim from "./Aim.jsx";
 
 const IMAGE_LIBRARY = "111028";
 const PERSON_OBSERVER = "121008";
+const QUALITATIVE_EVALUATIONS = "C0034375";
 // moved from aimEditor.jsx
 export const enumAimType = {
   imageAnnotation: 1,
@@ -874,4 +875,14 @@ export function createAimMarkups(aim, markupsToSave) {
 export function storeMarkupsToBeSaved(imageId, markupData, markupsToSave) {
   if (!markupsToSave[imageId]) markupsToSave[imageId] = [];
   markupsToSave[imageId].push(markupData);
+}
+
+export function getQualitativeEvaluationsFromSR(dataset) {
+  if (dataset.ContentSequence) {
+    const qualitativeEvaluations = toArray(dataset.ContentSequence).find(
+      group => group.ConceptNameCodeSequence.CodeValue === QUALITATIVE_EVALUATIONS
+    );
+    return qualitativeEvaluations.ContentSequence;
+  }
+  return [];
 }
