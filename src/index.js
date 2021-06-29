@@ -6,7 +6,8 @@ import {
   createOfflineAimSegmentation,
   addSegmentationToAim,
   createAimMarkups,
-  storeMarkupsToBeSaved
+  storeMarkupsToBeSaved,
+  fixAimControlledTerms
 } from "./aimHelper.js";
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper.js";
 import { aim2dicomsr, dicomsr2aim } from "./conversion.js";
@@ -22,7 +23,8 @@ const aimapi = {
   dicomsr2aim,
   addSegmentationToAim,
   createAimMarkups,
-  storeMarkupsToBeSaved
+  storeMarkupsToBeSaved,
+  fixAimControlledTerms
 };
 
 export {
@@ -37,6 +39,7 @@ export {
   dicomsr2aim,
   addSegmentationToAim,
   createAimMarkups,
-  storeMarkupsToBeSaved
+  storeMarkupsToBeSaved,
+  fixAimControlledTerms
 };
 export default aimapi;
