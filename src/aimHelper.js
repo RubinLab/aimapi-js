@@ -598,7 +598,7 @@ export function getAimImageDataFromSR(srDataset, trackingIdentifier, comment) {
   // I could get these from the dataset but adapter retrieves it and puts it in the tool anyways
   aim.name = { value: trackingIdentifier };
   // parse comment and fill in the programmed comment parts
-  const commentParts = comment.split("\/\/");
+  const commentParts = comment ? comment.split("\/\/") : [];
   if (commentParts[0]) {
     const programmedCommentParts = commentParts[0].split("\/");
     // don't know what to do otherwise
@@ -643,7 +643,6 @@ function toArray(x) {
 };
 
 function getRefImageFromSR(dataset) {
-  console.log('in', toArray(dataset.ContentSequence));
   if (dataset.ContentSequence) {
     const imageLibrary = toArray(dataset.ContentSequence).find(
       group => group.ConceptNameCodeSequence.CodeValue === IMAGE_LIBRARY
@@ -859,6 +858,10 @@ export function createAimMarkups(aim, markupsToSave) {
         case "polygon":
           addPolygonToAim(aim, markup, shapeIndex, imageId, frameNum);
           break;
+        // why not freehand?
+        case "freehand":
+          addPolygonToAim(aim, markup, shapeIndex, imageId, frameNum);
+          break;
         case "bidirectional":
           addBidirectionalToAim(
             aim,
@@ -882,7 +885,7 @@ export function getQualitativeEvaluationsFromSR(dataset) {
     const qualitativeEvaluations = toArray(dataset.ContentSequence).find(
       group => group.ConceptNameCodeSequence.CodeValue === QUALITATIVE_EVALUATIONS
     );
-    return qualitativeEvaluations.ContentSequence;
+    return qualitativeEvaluations ? qualitativeEvaluations.ContentSequence : undefined;
   }
   return [];
 }

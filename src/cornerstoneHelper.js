@@ -93,19 +93,34 @@ function createFreehand(data, points, calculations) {
     freehandPoints.push(freehandPoint);
   });
   data.handles.points = [...freehandPoints];
-  // TODO what are calculations. no circle class in adapter
-  // if (calculations) {
-  //   for (let i=0; i< calculations.length; i += 1) {
-  //     console.error('calc', calculations[i].type, calculations[i].value, calculations[i]);
-  //     // TODO check with Mete
-  //     if (calculations[i].type === 'Length') {
-  //       // !! no unit in report classes
-  //       data.length = parseFloat(calculations[i].value);
-  //       data.unit = calculations[i].unit;
-  //       break;
-  //     }
-  //   }
-  // }
+  const meanStdDev = {};
+  if (calculations) {
+    for (let i=0; i< calculations.length; i += 1) {
+      if (calculations[i].value !== 'undefined') {
+        if (calculations[i].type === 'Min') {
+          meanStdDev.min = parseFloat(calculations[i].value);
+          meanStdDev.unit = calculations[i].unit;
+        }
+        if (calculations[i].type === 'Max') {
+          meanStdDev.max = parseFloat(calculations[i].value);
+          meanStdDev.unit = calculations[i].unit;
+        }
+        if (calculations[i].type === 'Mean') {
+          meanStdDev.mean = parseFloat(calculations[i].value);
+          meanStdDev.unit = calculations[i].unit;
+        }
+        if (calculations[i].type === 'Standard Deviation') {
+          meanStdDev.stdDev = parseFloat(calculations[i].value);
+          meanStdDev.unit = calculations[i].unit;
+        }
+      }
+    }
+    // TODO improve unit gathering/sending. what if they have different? 
+    if (meanStdDev.unit === '{SUVbw}g/ml') 
+      data.meanStdDevSUV = meanStdDev;
+    else 
+      data.meanStdDev = meanStdDev;
+  }
 }
 
 function createCornerstoneTool(
@@ -129,7 +144,8 @@ export function createTool(markup, color, invalidated = true) {
   switch (type) {
     case "TwoDimensionPolyline":
       return {
-        type: "FreehandRoi",
+        // TODO should it be FreehandRoi?
+        type: "Freehand",
         data: createCornerstoneTool(
           markup,
           color,

@@ -6,6 +6,7 @@ import { getMarkup, fixAimControlledTerms, getAimImageDataFromSR, getUserFromSR,
 import { createTool, linesToPerpendicular } from "./cornerstoneHelper";
 import { generateUid } from "../utils/aid";
 import RECIST_v2 from "../templates/RECIST_v2_radelement";
+import ROI from "../templates/ROI-Only_Template";
 export function aim2dicomsr(aim) {
   try {
     aim = fixAimControlledTerms(aim);
@@ -61,14 +62,23 @@ function getToolClass(measurementGroup, dataset, registeredToolClasses) {
       if (!shapes[cs.ContentSequence.GraphicType]) shapes[cs.ContentSequence.GraphicType] = {};
       shapes[cs.ContentSequence.GraphicType][btoa(JSON.stringify(cs.ContentSequence.GraphicData))] = cs.ContentSequence.GraphicData;
     }
+    if (cs.ValueType && (cs.ValueType ==='SCOORD3D' || cs.ValueType ==='SCOORD')) {
+            if (!shapes[cs.GraphicType]) shapes[cs.GraphicType] = {};
+      shapes[cs.GraphicType][btoa(JSON.stringify(cs.GraphicData))] = cs.GraphicData;
+    }
   });
-  console.error('shapes', JSON.stringify(shapes), Object.keys(shapes).length);
   let type;
   if (shapes["POLYLINE"]) {
     // TODO check if lines are perpendicular
     if (Object.keys(shapes["POLYLINE"]).length === 2) type ='Bidirectional';
-    if (Object.keys(shapes["POLYLINE"]).length === 1) type ='Length';
+    if (Object.keys(shapes["POLYLINE"]).length === 1) {
+      if (Object.values(shapes["POLYLINE"])[0].length > 2)
+        type ='Freehand';
+      else
+        type ='Length';
+    }
   }
+  if (shapes["POINT"] && Object.keys(shapes["POINT"]).length === 1) type ='Probe';
   // find which class it is by checking the shapes
   return registeredToolClasses.find(tc =>
     tc.toolType === type
@@ -82,6 +92,7 @@ export function dicomsr2aim(srBuffer) {
     // just RECIST_v2 for now
     const templates = {};
     templates['RECIST_v2'] =  RECIST_v2;//JSON.parse(fs.readFileSync('../templates/RECIST_v2_radelement.json'));
+    templates['ROI'] =  ROI;
 
     const dicomDict = dcmjs.data.DicomMessage.readFile(srBuffer);
     const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
@@ -133,7 +144,7 @@ export function dicomsr2aim(srBuffer) {
       }
 
     } else {
-      console.error('DICOM SR with multiple findings is not supported!');
+      console.error('DICOM SR with multiple findings is not supported!', findings);
       
     }
     // physical entity (finding site)
@@ -235,31 +246,33 @@ function getSRLabel(obj) {
 function addQualitativeEvaluations(aim, template, findingSites, srDataset) {
   // get qualitative evaluations from the dataset and create a map
   const srQualitativeEvaluations = getQualitativeEvaluationsFromSR(srDataset);
-  const qualitativeEvaluations = createQualitativeEvaluationsMap(srQualitativeEvaluations);
-  template.TemplateContainer.Template[0].Component.forEach(component => {
-    if (component.AnatomicEntity) { // finding site
-      if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection)
-        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection = { ImagingPhysicalEntity : [] };
-      if (Object.keys(findingSites).length !== 1) {
-        console.warning('Multiple finding sites are not supported. Getting only the first one');
+  if (srQualitativeEvaluations) {
+    const qualitativeEvaluations = createQualitativeEvaluationsMap(srQualitativeEvaluations);
+    template.TemplateContainer.Template[0].Component.forEach(component => {
+      if (component.AnatomicEntity) { // finding site
+        if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection)
+          aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection = { ImagingPhysicalEntity : [] };
+        if (Object.keys(findingSites).length !== 1) {
+          console.warning('Multiple finding sites are not supported. Getting only the first one');
+        }
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection.ImagingPhysicalEntity.push(createEntity(Object.values(findingSites)[0], component.label));
+        // TODO imagingPhysicalEntityCharacteristicCollection
+      } else if (component.ImagingObservation) {
+        if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection)
+          aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection = { ImagingObservationEntity : [] };    
+        const io = createEntity(qualitativeEvaluations[getSRLabel(component)], component.label);
+        // TODO imagingPhysicalEntityCharacteristicCollection
+        if (component.ImagingObservation.ImagingObservationCharacteristic) {
+          component.ImagingObservation.ImagingObservationCharacteristic.forEach(characteristic => {
+            if (!io.imagingObservationCharacteristicCollection)
+              io.imagingObservationCharacteristicCollection = { ImagingObservationCharacteristic : [] };    
+            io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.push(createEntityCharacteristic(qualitativeEvaluations[getSRLabel(characteristic)], characteristic.label));
+          });
+        }
+        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection.ImagingObservationEntity.push(io);
       }
-      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingPhysicalEntityCollection.ImagingPhysicalEntity.push(createEntity(Object.values(findingSites)[0], component.label));
-      // TODO imagingPhysicalEntityCharacteristicCollection
-    } else if (component.ImagingObservation) {
-      if (!aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection)
-        aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection = { ImagingObservationEntity : [] };    
-      const io = createEntity(qualitativeEvaluations[getSRLabel(component)], component.label);
-      // TODO imagingPhysicalEntityCharacteristicCollection
-      if (component.ImagingObservation.ImagingObservationCharacteristic) {
-        component.ImagingObservation.ImagingObservationCharacteristic.forEach(characteristic => {
-          if (!io.imagingObservationCharacteristicCollection)
-            io.imagingObservationCharacteristicCollection = { ImagingObservationCharacteristic : [] };    
-          io.imagingObservationCharacteristicCollection.ImagingObservationCharacteristic.push(createEntityCharacteristic(qualitativeEvaluations[getSRLabel(characteristic)], characteristic.label));
-        });
-      }
-      aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0].imagingObservationEntityCollection.ImagingObservationEntity.push(io);
-    }
-  });
+    });
+  }
   return aim;
 }
 
@@ -329,7 +342,7 @@ function getQualitativeEvaluations(aim) {
   const imagingObservations =
     aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
       .imagingObservationEntityCollection;
-  if (!imagingObservations) return [];
+  if (!imagingObservations) return undefined;
   const qualitativeEvaluations = [];
   imagingObservations.ImagingObservationEntity.forEach((io) => {
     // we have the question type, make question type question, typecode as answer
@@ -366,7 +379,7 @@ function getQualitativeEvaluations(aim) {
       }
     }
   });
-  return qualitativeEvaluations;
+  return qualitativeEvaluations.length > 0 ? qualitativeEvaluations : undefined;
 }
 
 function getFindingSites(aim) {
