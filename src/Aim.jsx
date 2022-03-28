@@ -577,6 +577,12 @@ class Aim {
   _getProgrammedComment = () => {
     const SEPERATOR = " / ";
     const { modality, description, instanceNumber, number } = this.temp.series;
+    if (this.aimType !== enumAimType.imageAnnotation) {
+      instanceNumber = ""
+    }
+    if (this.aimType === enumAimType.studyAnnotation) {
+      modality = "";
+    }
     const comment =
       modality +
       SEPERATOR +
