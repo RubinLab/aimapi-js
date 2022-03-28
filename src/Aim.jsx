@@ -31,8 +31,9 @@ class Aim {
     this.equipment = this._createEquipment(this.temp.equipment);
     this.person = this._createPerson(this.temp.person);
     this.imageAnnotations = {
-      ImageAnnotation: [this._createImageAnnotations(aimType)],
+      ImageAnnotation: [this._createImageAnnotations()],
     };
+    this.aimType = aimType;
     if (updatedAimId === undefined)
       this.uniqueIdentifier = { root: generateUid() };
     else this.uniqueIdentifier = { root: updatedAimId };
@@ -426,8 +427,8 @@ class Aim {
   /*                                          */
   /*  Image Refrence Entity Collection        */
   /*                                          */
-  _createModality = (aimType) => {
-    if (aimType !== enumAimType.studyAnnotation) {
+  _createModality = () => {
+    if (this.aimType !== enumAimType.studyAnnotation) {
       const sopClassUid = this.temp.image[0].sopClassUid;
       if (sopClassUid && modalities[sopClassUid])
         var {
@@ -459,12 +460,12 @@ class Aim {
     return obj;
   };
 
-  _createImageCollection = (aimType) => {
+  _createImageCollection = () => {
     let obj = {};
     obj["Image"] = [];
     this.temp.image.forEach((image) => {
       let { sopClassUid, sopInstanceUid } = image;
-      if (aimType === enumAimType.imageAnnotation) {
+      if (this.aimType === enumAimType.imageAnnotation) {
         sopClassUid = { root: sopClassUid };
         sopInstanceUid = { root: sopInstanceUid };
       }
@@ -477,19 +478,19 @@ class Aim {
     return obj;
   };
 
-  _createImageSeries = (aimType) => {
+  _createImageSeries = () => {
     var obj = {};
     // Study Annotation
-    if (aimType === enumAimType.studyAnnotation) {
+    if (this.aimType === enumAimType.studyAnnotation) {
       obj["instanceUid"] = { root: "" };
     }
     else obj["instanceUid"] = { root: this.temp.series.instanceUid };
-    obj["modality"] = this._createModality(aimType);
-    obj["imageCollection"] = this._createImageCollection(aimType);
+    obj["modality"] = this._createModality();
+    obj["imageCollection"] = this._createImageCollection();
     return obj;
   };
 
-  _createImageStudy = (aimType) => {
+  _createImageStudy = () => {
     let({
       accessionNumber,
       startTime,
@@ -501,28 +502,28 @@ class Aim {
     obj["startDate"] = { value: startDate };
     obj["startTime"] = { value: startTime };
     obj["accessionNumber"] = { value: accessionNumber };
-    obj["imageSeries"] = this._createImageSeries(aimType);
+    obj["imageSeries"] = this._createImageSeries();
     return obj;
   };
 
-  _createImageReferenceEntity = (aimType) => {
+  _createImageReferenceEntity = () => {
     var obj = {};
     obj["xsi:type"] = "DicomImageReferenceEntity";
     obj["uniqueIdentifier"] = { root: generateUid() };
-    obj["imageStudy"] = this._createImageStudy(aimType);
+    obj["imageStudy"] = this._createImageStudy();
     return obj;
   };
 
-  _createImageReferanceEntityCollection = (aimType) => {
+  _createImageReferanceEntityCollection = () => {
     var obj = {};
-    obj["ImageReferenceEntity"] = [this._createImageReferenceEntity(aimType)];
+    obj["ImageReferenceEntity"] = [this._createImageReferenceEntity()];
     return obj;
   };
 
   //
   //
   //
-  _createImageAnnotations = (aimType) => {
+  _createImageAnnotations = () => {
     const {
       name,
       comment,
@@ -542,7 +543,7 @@ class Aim {
     obj["precedentReferencedAnnotationUid"] = { root: "" };
     if (imagingPhysicalEntityCollection)
       obj["imagingPhysicalEntityCollection"] = imagingPhysicalEntityCollection;
-    if (aimType === 1) {
+    if (this.aimType === enumAimType.imageAnnotation) {
       //if this is an image annotation
       obj["calculationEntityCollection"] = { CalculationEntity: [] };
       obj["imageAnnotationStatementCollection"] = {
@@ -557,7 +558,7 @@ class Aim {
       obj["inferenceEntityCollection"] = inferenceEntityCollection;
     obj[
       "imageReferenceEntityCollection"
-    ] = this._createImageReferanceEntityCollection(aimType);
+    ] = this._createImageReferanceEntityCollection();
     return obj;
   };
 
