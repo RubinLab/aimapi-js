@@ -459,13 +459,19 @@ class Aim {
     return obj;
   };
 
-  _createImageCollection = () => {
+  _createImageCollection = (aimType) => {
     let obj = {};
     obj["Image"] = [];
     this.temp.image.forEach((image) => {
       let { sopClassUid, sopInstanceUid } = image;
-      sopClassUid = { root: sopClassUid };
-      sopInstanceUid = { root: sopInstanceUid };
+      if (aimType === enumAimType.imageAnnotation) {
+        sopClassUid = { root: sopClassUid };
+        sopInstanceUid = { root: sopInstanceUid };
+      }
+      else {
+        sopClassUid = { root: "" };
+        sopInstanceUid = { root: "" };
+      }
       obj["Image"].push({ sopClassUid, sopInstanceUid });
     });
     return obj;
@@ -479,7 +485,7 @@ class Aim {
     }
     else obj["instanceUid"] = { root: this.temp.series.instanceUid };
     obj["modality"] = this._createModality(aimType);
-    obj["imageCollection"] = this._createImageCollection();
+    obj["imageCollection"] = this._createImageCollection(aimType);
     return obj;
   };
 
