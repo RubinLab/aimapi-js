@@ -2,7 +2,7 @@ import Aim from "./Aim.jsx";
 export { Aim };
 
 // moved from aimEditor.jsx
-const enumAimType = {
+export const enumAimType = {
   imageAnnotation: 1,
   seriesAnnotation: 2,
   studyAnnotation: 3,
@@ -132,8 +132,10 @@ function getCalculationEntitiesOfMarkUp(aim, markupUid) {
 
 function getImageAnnotationStatements(aim) {
   return aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-  .imageAnnotationStatementCollection ? aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-    .imageAnnotationStatementCollection.ImageAnnotationStatement : [];
+    .imageAnnotationStatementCollection
+    ? aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+        .imageAnnotationStatementCollection.ImageAnnotationStatement
+    : [];
 }
 
 function getCalculationEntities(aim) {
@@ -235,10 +237,12 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   if (segmentation.SegmentSequence.constructor.name !== "Array") {
     segmentation.SegmentSequence = [segmentation.SegmentSequence];
   }
-  
+
   // add name, comment and segmentation
   aim.imageAnnotations.ImageAnnotation[0].name = {
-    value: segmentation.SeriesDescription || segmentation.SegmentSequence[0].SegmentLabel,
+    value:
+      segmentation.SeriesDescription ||
+      segmentation.SegmentSequence[0].SegmentLabel,
   };
   // TODO there is no way to fill programmed comment without opening the source image
   aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };

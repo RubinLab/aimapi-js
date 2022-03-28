@@ -1,6 +1,7 @@
 import aimConf from "./aimConf";
 import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
+import { enumAimType } from "./aimHelper";
 
 class Aim {
   constructor(imageData, aimType, updatedAimId, trackingUId = generateUid()) {
@@ -425,24 +426,26 @@ class Aim {
   /*                                          */
   /*  Image Refrence Entity Collection        */
   /*                                          */
-  _createModality = () => {
-    const sopClassUid = this.temp.image[0].sopClassUid;
-    if (sopClassUid && modalities[sopClassUid])
-      var {
-        codeValue,
-        codingSchemeDesignator,
-        codeMeaning,
-        codingSchemeVersion,
-      } = modalities[sopClassUid];
-    else {
-      const modality = this.temp.series.modality;
-      if (modality && modalities[modality]) {
+  _createModality = (aimType) => {
+    if (aimType !== enumAimType.studyAnnotation) {
+      const sopClassUid = this.temp.image[0].sopClassUid;
+      if (sopClassUid && modalities[sopClassUid])
         var {
           codeValue,
           codingSchemeDesignator,
           codeMeaning,
           codingSchemeVersion,
-        } = modalities[modality];
+        } = modalities[sopClassUid];
+      else {
+        const modality = this.temp.series.modality;
+        if (modality && modalities[modality]) {
+          var {
+            codeValue,
+            codingSchemeDesignator,
+            codeMeaning,
+            codingSchemeVersion,
+          } = modalities[modality];
+        }
       }
     }
     var obj = {};
@@ -468,41 +471,45 @@ class Aim {
     return obj;
   };
 
-  _createImageSeries = () => {
+  _createImageSeries = (aimType) => {
     var obj = {};
-    obj["instanceUid"] = { root: this.temp.series.instanceUid };
-    obj["modality"] = this._createModality();
+    // Study Annotation
+    if (aimType === enumAimType.studyAnnotation) {
+      obj["instanceUid"] = { root: "" };
+    }
+    else obj["instanceUid"] = { root: this.temp.series.instanceUid };
+    obj["modality"] = this._createModality(aimType);
     obj["imageCollection"] = this._createImageCollection();
     return obj;
   };
 
-  _createImageStudy = () => {
-    const {
+  _createImageStudy = (aimType) => {
+    let({
       accessionNumber,
       startTime,
       instanceUid,
       startDate,
-    } = this.temp.study;
+    }) = this.temp.study;
     var obj = {};
     obj["instanceUid"] = { root: instanceUid };
     obj["startDate"] = { value: startDate };
     obj["startTime"] = { value: startTime };
     obj["accessionNumber"] = { value: accessionNumber };
-    obj["imageSeries"] = this._createImageSeries();
+    obj["imageSeries"] = this._createImageSeries(aimType);
     return obj;
   };
 
-  _createImageReferenceEntity = () => {
+  _createImageReferenceEntity = (aimType) => {
     var obj = {};
     obj["xsi:type"] = "DicomImageReferenceEntity";
     obj["uniqueIdentifier"] = { root: generateUid() };
-    obj["imageStudy"] = this._createImageStudy();
+    obj["imageStudy"] = this._createImageStudy(aimType);
     return obj;
   };
 
-  _createImageReferanceEntityCollection = () => {
+  _createImageReferanceEntityCollection = (aimType) => {
     var obj = {};
-    obj["ImageReferenceEntity"] = [this._createImageReferenceEntity()];
+    obj["ImageReferenceEntity"] = [this._createImageReferenceEntity(aimType)];
     return obj;
   };
 
@@ -544,7 +551,7 @@ class Aim {
       obj["inferenceEntityCollection"] = inferenceEntityCollection;
     obj[
       "imageReferenceEntityCollection"
-    ] = this._createImageReferanceEntityCollection();
+    ] = this._createImageReferanceEntityCollection(aimType);
     return obj;
   };
 
