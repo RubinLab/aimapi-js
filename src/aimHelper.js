@@ -198,6 +198,85 @@ export function getAimImageData(image) {
   return obj;
 }
 
+export function getStudyAimData(study) {
+  var obj = {};
+  obj.aim = {};
+  obj.study = {};
+  obj.series = {};
+  obj.equipment = {};
+  obj.person = {};
+  obj.image = [];
+  const { aim, study: _study, series, equipment, person, image } = obj;
+  const {
+    studyUID,
+    studyTime,
+    studyDate,
+    studyAccessionNumber,
+    sex,
+    patientName,
+    patientID,
+    birthdate,
+    examTypes,
+  } = study;
+
+  aim.studyInstanceUid = studyUID || "";
+
+  _study.startTime = studyTime || "";
+  _study.instanceUid = studyUID || "";
+  _study.startDate = studyDate || "";
+  _study.accessionNumber = studyAccessionNumber || "";
+
+  series.instanceUid = "";
+  series.modality = getStudyModalityFromExamTypes(examTypes) || "";
+  series.number = "";
+  series.description = "";
+  series.instanceNumber = "";
+
+  image.push({
+    sopClassUid: "",
+    sopInstanceUid: "",
+  });
+
+  equipment.manufacturerName = "";
+  equipment.manufacturerModelName = "";
+  equipment.softwareVersion = "";
+
+  person.sex = sex || "";
+  person.name = patientName || "";
+  person.patientId = patientID || "";
+  person.birthDate = birthdate || "";
+
+  return obj;
+}
+
+export function addSemanticAnswersToAimData(answers, aimData) {
+  const {
+    name,
+    comment,
+    imagingPhysicalEntityCollection,
+    imagingObservationEntityCollection,
+    inferenceEntity,
+    typeCode,
+  } = answers;
+  aimData.aim.name = name;
+  if (comment) aimData.aim.comment = comment;
+  if (imagingPhysicalEntityCollection)
+    aimData.aim.imagingPhysicalEntityCollection =
+      imagingPhysicalEntityCollection;
+  if (imagingObservationEntityCollection)
+    aimData.aim.imagingObservationEntityCollection =
+      imagingObservationEntityCollection;
+  if (inferenceEntity) aimData.aim.inferenceEntity = inferenceEntity;
+  if (typeCode) aimData.aim.typeCode = typeCode;
+}
+
+export function addUserToAimData({ userName, displayName }, aimData) {
+  let obj = {};
+  obj.loginName = userName;
+  obj.name = displayName;
+  aimData.user = obj;
+}
+
 function getSingleImageData(image) {
   return {
     sopClassUid: image.data.string("x00080016") || "",
@@ -209,6 +288,17 @@ function addSingleImageDataToAim(aim, image) {
   if (!aim.image) return;
   aim.image.push(getSingleImageData(image));
 }
+
+export const getStudyModalityFromExamTypes = (examTypes) => {
+  if (!examTypes.length) return "";
+  if (examTypes.length === 1) return examTypes[0];
+  if (examTypes.includes("PT")) {
+    if (examTypes.includes("CT")) return "PET-CT";
+    if (examTypes.includes("MR")) return "PET-MR";
+  } else if (examTypes.includes("US") && examTypes.includes("RF"))
+    return "US-RF";
+  else return "";
+};
 
 // ---------- aimapi additional methods --------
 // new method inspired by createAimSegmentation in aimEditor.jsx

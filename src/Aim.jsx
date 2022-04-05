@@ -1,10 +1,26 @@
 import aimConf from "./aimConf";
 import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
-import { enumAimType } from "./aimHelper";
+import { enumAimType, getAimImageData, getStudyAimData, addSemanticAnswersToAimData, addUserToAimData } from "./aimHelper";
 
 class Aim {
-  constructor(imageData, aimType, updatedAimId, trackingUId = generateUid()) {
+  constructor(data, aimType, updatedAimId, trackingUId = generateUid()) {
+    let aimData;
+    const { image, study, answers, user } = data;
+    // new aim creation (data includes image||study data and answers)
+    if (image || study || answers) {
+      if (aimType === enumAimType.imageAnnotation) {
+        aimData = getAimImageData(image);
+      }
+      if (aimType === enumAimType.studyAnnotation) {
+        aimData = getStudyAimData(study);
+      }
+      addSemanticAnswersToAimData(answers, aimData);
+      addUserToAimData(user, aimData);
+    }
+    else { //old way of aim creation to support functionalities that depend on aimapi
+      aimData = data;
+    }
     this.temp = {};
     ({
       aim: this.temp.aim,
@@ -15,7 +31,7 @@ class Aim {
       equipment: this.temp.equipment,
       user: this.temp.user,
       person: this.temp.person,
-    } = imageData);
+    } = aimData);
     this.temp.aim.trackingUId = trackingUId;
     this.xmlns = aimConf.xmlns;
     this["xmlns:rdf"] = aimConf["xmlns:rdf"];
@@ -448,6 +464,9 @@ class Aim {
           } = modalities[modality];
         }
       }
+    }
+    else { //Study annotation
+
     }
     var obj = {};
     obj["code"] = codeValue || "";
