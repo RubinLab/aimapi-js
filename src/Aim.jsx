@@ -32,6 +32,7 @@ class Aim {
       user: this.temp.user,
       person: this.temp.person,
     } = aimData);
+    this.temp.aimType = aimType;
     this.temp.aim.trackingUId = trackingUId;
     this.xmlns = aimConf.xmlns;
     this["xmlns:rdf"] = aimConf["xmlns:rdf"];
@@ -49,7 +50,6 @@ class Aim {
     this.imageAnnotations = {
       ImageAnnotation: [this._createImageAnnotations()],
     };
-    this.aimType = aimType;
     if (updatedAimId === undefined)
       this.uniqueIdentifier = { root: generateUid() };
     else this.uniqueIdentifier = { root: updatedAimId };
@@ -184,6 +184,7 @@ class Aim {
     obj["calculationResultCollection"] = {
       CalculationResult: [this._createCalcResult(unit, "LineLength", value)],
     };
+    console.log("SORUN NE", this.imageAnnotations.ImageAnnotation[0]);
     this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
       "CalculationEntity"
     ].push(obj);
@@ -444,7 +445,7 @@ class Aim {
   /*  Image Refrence Entity Collection        */
   /*                                          */
   _createModality = () => {
-    if (this.aimType !== enumAimType.studyAnnotation) {
+    if (this.temp.aimType !== enumAimType.studyAnnotation) {
       const sopClassUid = this.temp.image[0].sopClassUid;
       if (sopClassUid && modalities[sopClassUid])
         var {
@@ -466,7 +467,15 @@ class Aim {
       }
     }
     else { //Study annotation
-
+      const modality = this.temp.study.modality;
+      if (modality && modalities[modality]) {
+        var {
+          codeValue,
+          codingSchemeDesignator,
+          codeMeaning,
+          codingSchemeVersion,
+        } = modalities[modality];
+      }
     }
     var obj = {};
     obj["code"] = codeValue || "";
@@ -484,7 +493,7 @@ class Aim {
     obj["Image"] = [];
     this.temp.image.forEach((image) => {
       let { sopClassUid, sopInstanceUid } = image;
-      if (this.aimType === enumAimType.imageAnnotation) {
+      if (this.temp.aimType === enumAimType.imageAnnotation) {
         sopClassUid = { root: sopClassUid };
         sopInstanceUid = { root: sopInstanceUid };
       }
@@ -500,7 +509,7 @@ class Aim {
   _createImageSeries = () => {
     var obj = {};
     // Study Annotation
-    if (this.aimType === enumAimType.studyAnnotation) {
+    if (this.temp.aimType === enumAimType.studyAnnotation) {
       obj["instanceUid"] = { root: "" };
     }
     else obj["instanceUid"] = { root: this.temp.series.instanceUid };
@@ -510,12 +519,12 @@ class Aim {
   };
 
   _createImageStudy = () => {
-    let({
+    let {
       accessionNumber,
       startTime,
       instanceUid,
       startDate,
-    }) = this.temp.study;
+    } = this.temp.study;
     var obj = {};
     obj["instanceUid"] = { root: instanceUid };
     obj["startDate"] = { value: startDate };
@@ -562,9 +571,10 @@ class Aim {
     obj["precedentReferencedAnnotationUid"] = { root: "" };
     if (imagingPhysicalEntityCollection)
       obj["imagingPhysicalEntityCollection"] = imagingPhysicalEntityCollection;
-    if (this.aimType === enumAimType.imageAnnotation) {
+    if (this.temp.aimType === enumAimType.imageAnnotation) {
+
       //if this is an image annotation
-      obj["calculationEntityCollection"] = { CalculationEntity: [] };
+      obj["calculationEntityCollection"] = { "CalculationEntity": [] };
       obj["imageAnnotationStatementCollection"] = {
         ImageAnnotationStatement: [],
       };
@@ -595,11 +605,11 @@ class Aim {
 
   _getProgrammedComment = () => {
     const SEPERATOR = " / ";
-    const { modality, description, instanceNumber, number } = this.temp.series;
-    if (this.aimType !== enumAimType.imageAnnotation) {
+    let { modality, description, instanceNumber, number } = this.temp.series;
+    if (this.temp.aimType !== enumAimType.imageAnnotation) {
       instanceNumber = ""
     }
-    if (this.aimType === enumAimType.studyAnnotation) {
+    if (this.temp.aimType === enumAimType.studyAnnotation) {
       modality = "";
     }
     const comment =
@@ -723,9 +733,11 @@ class Aim {
   };
 
   getAim = () => {
+    const temp = this["temp"];
     delete this["temp"];
     const stringAim = JSON.stringify(this);
     const wrappedAim = `{"ImageAnnotationCollection": ${stringAim} } `;
+    this["temp"] = temp;
     return wrappedAim;
   };
 
@@ -733,6 +745,10 @@ class Aim {
   getAimJSON = () => {
     return JSON.parse(this.getAim());
   };
+
+  getType = () => {
+    return this.temp.aimType;
+  }
 }
 
 export default Aim;

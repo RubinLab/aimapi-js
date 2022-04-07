@@ -225,9 +225,10 @@ export function getStudyAimData(study) {
   _study.instanceUid = studyUID || "";
   _study.startDate = studyDate || "";
   _study.accessionNumber = studyAccessionNumber || "";
+  _study.modality = getStudyModalityFromExamTypes(examTypes) || "";
 
   series.instanceUid = "";
-  series.modality = getStudyModalityFromExamTypes(examTypes) || "";
+  series.modality = "";
   series.number = "";
   series.description = "";
   series.instanceNumber = "";
@@ -290,6 +291,11 @@ function addSingleImageDataToAim(aim, image) {
 }
 
 export const getStudyModalityFromExamTypes = (examTypes) => {
+  // remove SEG from examTypes
+  var index = examTypes.indexOf("SEG");
+  if (index > -1) {
+    examTypes.splice(index, 1);
+  }
   if (!examTypes.length) return "";
   if (examTypes.length === 1) return examTypes[0];
   if (examTypes.includes("PT")) {
@@ -297,7 +303,15 @@ export const getStudyModalityFromExamTypes = (examTypes) => {
     if (examTypes.includes("MR")) return "PET-MR";
   } else if (examTypes.includes("US") && examTypes.includes("RF"))
     return "US-RF";
-  else return "";
+  else
+    return {
+      code: "99EPADM0",
+      codeSystemName: "99EPAD",
+      "iso:displayName": {
+        "xmlns:iso": "uri:iso.org:21090",
+        value: "NA",
+      },
+    };
 };
 
 // ---------- aimapi additional methods --------
