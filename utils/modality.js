@@ -11,78 +11,96 @@ export var modalities = {
     codeValue: "CT",
     codeMeaning: "Computed Tomography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.1": {
     codeValue: "CR",
     codeMeaning: "Computed Radiography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.128": {
     codeValue: "PT",
     codeMeaning: "Positron emission tomography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.4": {
     codeValue: "MR",
     codeMeaning: "Magnetic Resonance",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.6.1": {
     codeValue: "US",
     codeMeaning: "Ultrasound",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.1.2": {
     codeValue: "MG",
     codeMeaning: "Mammography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   "1.2.840.10008.5.1.4.1.1.1.2.1": {
     codeValue: "MG",
     codeMeaning: "Mammography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   CT: {
     codeValue: "CT",
     codeMeaning: "Computed Tomography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   CR: {
     codeValue: "CR",
     codeMeaning: "Computed Radiography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   PT: {
     codeValue: "PT",
     codeMeaning: "Positron emission tomography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   MR: {
     codeValue: "MR",
     codeMeaning: "Magnetic Resonance",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   US: {
     codeValue: "US",
     codeMeaning: "Ultrasound",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
+    codingSchemeVersion: lexVersion,
   },
   MG: {
     codeValue: "MG",
     codeMeaning: "Mammography",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion
-  }
+    codingSchemeVersion: lexVersion,
+  },
+  "PET-CT": {
+    codeValue: "RID10341",
+    codeMeaning: "PET-CT",
+    codingSchemeDesignator: "RADLEX",
+    codingSchemeVersion: "4.1",
+  },
+  "PET-MR": {
+    codeValue: "RID10342",
+    codeMeaning: "PET-MR",
+    codingSchemeDesignator: "RADLEX",
+    codingSchemeVersion: "4.1",
+  },
+  "US-RF": {
+    codeValue: "RID49581",
+    codeMeaning: "US-",
+    codingSchemeDesignator: "RADLEX",
+    codingSchemeVersion: "4.1",
+  },
 };
