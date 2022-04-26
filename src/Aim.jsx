@@ -519,7 +519,7 @@ class Aim {
   };
 
   _createImageStudy = () => {
-    let {
+    const {
       accessionNumber,
       startTime,
       instanceUid,
