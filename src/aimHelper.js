@@ -2,7 +2,7 @@ import Aim from "./Aim.jsx";
 export { Aim };
 
 // moved from aimEditor.jsx
-const enumAimType = {
+export const enumAimType = {
   imageAnnotation: 1,
   seriesAnnotation: 2,
   studyAnnotation: 3,
@@ -132,8 +132,10 @@ function getCalculationEntitiesOfMarkUp(aim, markupUid) {
 
 function getImageAnnotationStatements(aim) {
   return aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-  .imageAnnotationStatementCollection ? aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
-    .imageAnnotationStatementCollection.ImageAnnotationStatement : [];
+    .imageAnnotationStatementCollection
+    ? aim.ImageAnnotationCollection.imageAnnotations.ImageAnnotation[0]
+        .imageAnnotationStatementCollection.ImageAnnotationStatement
+    : [];
 }
 
 function getCalculationEntities(aim) {
@@ -196,6 +198,86 @@ export function getAimImageData(image) {
   return obj;
 }
 
+export function getStudyAimData(study) {
+  var obj = {};
+  obj.aim = {};
+  obj.study = {};
+  obj.series = {};
+  obj.equipment = {};
+  obj.person = {};
+  obj.image = [];
+  const { aim, study: _study, series, equipment, person, image } = obj;
+  const {
+    studyUID,
+    studyTime,
+    studyDate,
+    studyAccessionNumber,
+    sex,
+    patientName,
+    patientID,
+    birthdate,
+    examTypes,
+  } = study;
+
+  aim.studyInstanceUid = studyUID || "";
+
+  _study.startTime = studyTime || "";
+  _study.instanceUid = studyUID || "";
+  _study.startDate = studyDate || "";
+  _study.accessionNumber = studyAccessionNumber || "";
+  _study.modality = getStudyModalityFromExamTypes(examTypes) || "";
+
+  series.instanceUid = "";
+  series.modality = "";
+  series.number = "";
+  series.description = "";
+  series.instanceNumber = "";
+
+  image.push({
+    sopClassUid: "",
+    sopInstanceUid: "",
+  });
+
+  equipment.manufacturerName = "";
+  equipment.manufacturerModelName = "";
+  equipment.softwareVersion = "";
+
+  person.sex = sex || "";
+  person.name = patientName || "";
+  person.patientId = patientID || "";
+  person.birthDate = birthdate || "";
+
+  return obj;
+}
+
+export function addSemanticAnswersToAimData(answers, aimData) {
+  const {
+    name,
+    comment,
+    imagingPhysicalEntityCollection,
+    imagingObservationEntityCollection,
+    inferenceEntity,
+    typeCode,
+  } = answers;
+  aimData.aim.name = name;
+  if (comment) aimData.aim.comment = comment;
+  if (imagingPhysicalEntityCollection)
+    aimData.aim.imagingPhysicalEntityCollection =
+      imagingPhysicalEntityCollection;
+  if (imagingObservationEntityCollection)
+    aimData.aim.imagingObservationEntityCollection =
+      imagingObservationEntityCollection;
+  if (inferenceEntity) aimData.aim.inferenceEntity = inferenceEntity;
+  if (typeCode) aimData.aim.typeCode = typeCode;
+}
+
+export function addUserToAimData({ userName, displayName }, aimData) {
+  let obj = {};
+  obj.loginName = userName;
+  obj.name = displayName;
+  aimData.user = obj;
+}
+
 function getSingleImageData(image) {
   return {
     sopClassUid: image.data.string("x00080016") || "",
@@ -207,6 +289,30 @@ function addSingleImageDataToAim(aim, image) {
   if (!aim.image) return;
   aim.image.push(getSingleImageData(image));
 }
+
+export const getStudyModalityFromExamTypes = (examTypes) => {
+  // remove SEG from examTypes
+  var index = examTypes.indexOf("SEG");
+  if (index > -1) {
+    examTypes.splice(index, 1);
+  }
+  if (!examTypes.length) return "";
+  if (examTypes.length === 1) return examTypes[0];
+  if (examTypes.includes("PT")) {
+    if (examTypes.includes("CT")) return "PET-CT";
+    if (examTypes.includes("MR")) return "PET-MR";
+  } else if (examTypes.includes("US") && examTypes.includes("RF"))
+    return "US-RF";
+  else
+    return {
+      code: "99EPADM0",
+      codeSystemName: "99EPAD",
+      "iso:displayName": {
+        "xmlns:iso": "uri:iso.org:21090",
+        value: "NA",
+      },
+    };
+};
 
 // ---------- aimapi additional methods --------
 // new method inspired by createAimSegmentation in aimEditor.jsx
@@ -235,10 +341,12 @@ export function createOfflineAimSegmentation(segmentation, userInfo) {
   if (segmentation.SegmentSequence.constructor.name !== "Array") {
     segmentation.SegmentSequence = [segmentation.SegmentSequence];
   }
-  
+
   // add name, comment and segmentation
   aim.imageAnnotations.ImageAnnotation[0].name = {
-    value: segmentation.SeriesDescription || segmentation.SegmentSequence[0].SegmentLabel,
+    value:
+      segmentation.SeriesDescription ||
+      segmentation.SegmentSequence[0].SegmentLabel,
   };
   // TODO there is no way to fill programmed comment without opening the source image
   aim.imageAnnotations.ImageAnnotation[0].comment = { value: "" };

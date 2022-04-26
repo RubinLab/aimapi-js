@@ -1,9 +1,26 @@
 import aimConf from "./aimConf";
 import { modalities } from "../utils/modality";
 import { generateUid } from "../utils/aid";
+import { enumAimType, getAimImageData, getStudyAimData, addSemanticAnswersToAimData, addUserToAimData } from "./aimHelper";
 
 class Aim {
-  constructor(imageData, aimType, updatedAimId, trackingUId = generateUid()) {
+  constructor(data, aimType, updatedAimId, trackingUId = generateUid()) {
+    let aimData;
+    const { image, study, answers, user } = data;
+    // new aim creation (data includes image||study data and answers)
+    if (image || study || answers) {
+      if (aimType === enumAimType.imageAnnotation) {
+        aimData = getAimImageData(image);
+      }
+      if (aimType === enumAimType.studyAnnotation) {
+        aimData = getStudyAimData(study);
+      }
+      addSemanticAnswersToAimData(answers, aimData);
+      addUserToAimData(user, aimData);
+    }
+    else { //old way of aim creation to support functionalities that depend on aimapi
+      aimData = data;
+    }
     this.temp = {};
     ({
       aim: this.temp.aim,
@@ -14,7 +31,8 @@ class Aim {
       equipment: this.temp.equipment,
       user: this.temp.user,
       person: this.temp.person,
-    } = imageData);
+    } = aimData);
+    this.temp.aimType = aimType;
     this.temp.aim.trackingUId = trackingUId;
     this.xmlns = aimConf.xmlns;
     this["xmlns:rdf"] = aimConf["xmlns:rdf"];
@@ -30,7 +48,7 @@ class Aim {
     this.equipment = this._createEquipment(this.temp.equipment);
     this.person = this._createPerson(this.temp.person);
     this.imageAnnotations = {
-      ImageAnnotation: [this._createImageAnnotations(aimType)],
+      ImageAnnotation: [this._createImageAnnotations()],
     };
     if (updatedAimId === undefined)
       this.uniqueIdentifier = { root: generateUid() };
@@ -166,6 +184,7 @@ class Aim {
     obj["calculationResultCollection"] = {
       CalculationResult: [this._createCalcResult(unit, "LineLength", value)],
     };
+    console.log("SORUN NE", this.imageAnnotations.ImageAnnotation[0]);
     this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
       "CalculationEntity"
     ].push(obj);
@@ -426,16 +445,29 @@ class Aim {
   /*  Image Refrence Entity Collection        */
   /*                                          */
   _createModality = () => {
-    const sopClassUid = this.temp.image[0].sopClassUid;
-    if (sopClassUid && modalities[sopClassUid])
-      var {
-        codeValue,
-        codingSchemeDesignator,
-        codeMeaning,
-        codingSchemeVersion,
-      } = modalities[sopClassUid];
-    else {
-      const modality = this.temp.series.modality;
+    if (this.temp.aimType !== enumAimType.studyAnnotation) {
+      const sopClassUid = this.temp.image[0].sopClassUid;
+      if (sopClassUid && modalities[sopClassUid])
+        var {
+          codeValue,
+          codingSchemeDesignator,
+          codeMeaning,
+          codingSchemeVersion,
+        } = modalities[sopClassUid];
+      else {
+        const modality = this.temp.series.modality;
+        if (modality && modalities[modality]) {
+          var {
+            codeValue,
+            codingSchemeDesignator,
+            codeMeaning,
+            codingSchemeVersion,
+          } = modalities[modality];
+        }
+      }
+    }
+    else { //Study annotation
+      const modality = this.temp.study.modality;
       if (modality && modalities[modality]) {
         var {
           codeValue,
@@ -461,8 +493,14 @@ class Aim {
     obj["Image"] = [];
     this.temp.image.forEach((image) => {
       let { sopClassUid, sopInstanceUid } = image;
-      sopClassUid = { root: sopClassUid };
-      sopInstanceUid = { root: sopInstanceUid };
+      if (this.temp.aimType === enumAimType.imageAnnotation) {
+        sopClassUid = { root: sopClassUid };
+        sopInstanceUid = { root: sopInstanceUid };
+      }
+      else {
+        sopClassUid = { root: "" };
+        sopInstanceUid = { root: "" };
+      }
       obj["Image"].push({ sopClassUid, sopInstanceUid });
     });
     return obj;
@@ -470,7 +508,11 @@ class Aim {
 
   _createImageSeries = () => {
     var obj = {};
-    obj["instanceUid"] = { root: this.temp.series.instanceUid };
+    // Study Annotation
+    if (this.temp.aimType === enumAimType.studyAnnotation) {
+      obj["instanceUid"] = { root: "" };
+    }
+    else obj["instanceUid"] = { root: this.temp.series.instanceUid };
     obj["modality"] = this._createModality();
     obj["imageCollection"] = this._createImageCollection();
     return obj;
@@ -509,7 +551,7 @@ class Aim {
   //
   //
   //
-  _createImageAnnotations = (aimType) => {
+  _createImageAnnotations = () => {
     const {
       name,
       comment,
@@ -529,9 +571,10 @@ class Aim {
     obj["precedentReferencedAnnotationUid"] = { root: "" };
     if (imagingPhysicalEntityCollection)
       obj["imagingPhysicalEntityCollection"] = imagingPhysicalEntityCollection;
-    if (aimType === 1) {
+    if (this.temp.aimType === enumAimType.imageAnnotation) {
+
       //if this is an image annotation
-      obj["calculationEntityCollection"] = { CalculationEntity: [] };
+      obj["calculationEntityCollection"] = { "CalculationEntity": [] };
       obj["imageAnnotationStatementCollection"] = {
         ImageAnnotationStatement: [],
       };
@@ -562,7 +605,13 @@ class Aim {
 
   _getProgrammedComment = () => {
     const SEPERATOR = " / ";
-    const { modality, description, instanceNumber, number } = this.temp.series;
+    let { modality, description, instanceNumber, number } = this.temp.series;
+    if (this.temp.aimType !== enumAimType.imageAnnotation) {
+      instanceNumber = ""
+    }
+    if (this.temp.aimType === enumAimType.studyAnnotation) {
+      modality = "";
+    }
     const comment =
       modality +
       SEPERATOR +
@@ -684,9 +733,11 @@ class Aim {
   };
 
   getAim = () => {
+    const temp = this["temp"];
     delete this["temp"];
     const stringAim = JSON.stringify(this);
     const wrappedAim = `{"ImageAnnotationCollection": ${stringAim} } `;
+    this["temp"] = temp;
     return wrappedAim;
   };
 
@@ -694,6 +745,10 @@ class Aim {
   getAimJSON = () => {
     return JSON.parse(this.getAim());
   };
+
+  getType = () => {
+    return this.temp.aimType;
+  }
 }
 
 export default Aim;
