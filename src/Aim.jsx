@@ -184,7 +184,6 @@ class Aim {
     obj["calculationResultCollection"] = {
       CalculationResult: [this._createCalcResult(unit, "LineLength", value)],
     };
-    console.log("SORUN NE", this.imageAnnotations.ImageAnnotation[0]);
     this.imageAnnotations.ImageAnnotation[0].calculationEntityCollection[
       "CalculationEntity"
     ].push(obj);
@@ -724,10 +723,10 @@ class Aim {
   //
   // User
   _createUser = (user) => {
-    const { userName, displayName } = user;
+    const { name, loginName } = user;
     return {
-      name: { value: displayName },
-      loginName: { value: userName }
+      name: { value: name },
+      loginName: { value: loginName }
     };
   };
 
