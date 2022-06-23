@@ -724,11 +724,10 @@ class Aim {
   //
   // User
   _createUser = (user) => {
-    const { loginName, name } = user;
+    const { userName, displayName } = user;
     return {
-      name: { value: name },
-      loginName: { value: loginName },
-      name: { value: name },
+      name: { value: displayName },
+      loginName: { value: userName }
     };
   };
 
