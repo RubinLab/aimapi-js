@@ -271,11 +271,8 @@ export function addSemanticAnswersToAimData(answers, aimData) {
   if (typeCode) aimData.aim.typeCode = typeCode;
 }
 
-export function addUserToAimData({ userName, displayName }, aimData) {
-  let obj = {};
-  obj.loginName = userName;
-  obj.name = displayName;
-  aimData.user = obj;
+export function addUserToAimData({ name, loginName }, aimData) {
+ aimData.user = {name, loginName};
 }
 
 function getSingleImageData(image) {
