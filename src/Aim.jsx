@@ -34,11 +34,11 @@ class Aim {
     } = aimData);
     this.temp.aimType = aimType;
     this.temp.aim.trackingUId = trackingUId;
-    this.xmlns = aimConf.xmlns;
-    this["xmlns:rdf"] = aimConf["xmlns:rdf"];
-    this["xmlns:xsi"] = aimConf["xmlns:xsi"];
+    // this.xmlns = aimConf.xmlns;
+    // this["xmlns:rdf"] = aimConf["xmlns:rdf"];
+    // this["xmlns:xsi"] = aimConf["xmlns:xsi"];
     this.aimVersion = aimConf.aimVersion;
-    this["xsi:schemaLocation"] = aimConf["xsi:schemaLocation"];
+    // this["xsi:schemaLocation"] = aimConf["xsi:schemaLocation"];
     this.uniqueIdentifier = "";
     this.studyInstanceUid = { root: this.temp.aim.studyInstanceUid };
     this.seriesInstanceUid = { root: generateUid() };
