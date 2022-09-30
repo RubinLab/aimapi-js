@@ -60,6 +60,8 @@ function parseAim(aim, imageIdSpecificMarkups) {
 }
 
 function getMarkup(markupEntity, aim) {
+  let data = {};
+  data["markupType"]=markupEntity["xsi:type"];
   let imageId = markupEntity["imageReferenceUid"]["root"];
   const frameNumber = markupEntity["referencedFrameNumber"]
     ? markupEntity["referencedFrameNumber"]["value"]
@@ -67,26 +69,31 @@ function getMarkup(markupEntity, aim) {
   // if (frameNumber > -1) imageId = imageId + "&frame=" + frameNumber; //if multiframe reconstruct the imageId
   imageId = imageId + "&frame=" + frameNumber;
   const markupUid = markupEntity["uniqueIdentifier"]["root"];
+  data["markupUid"] = markupUid;
+
   let calculations = [];
   try {
     calculations = getCalculationEntitiesOfMarkUp(aim, markupUid);
   } catch (error) {
     console.error("Can not get calculations", error);
   }
+  if(calculations.length)
+    data["calculations"] = calculations;
+
+
+  data["coordinates"] = markupEntity.twoDimensionSpatialCoordinateCollection.TwoDimensionSpatialCoordinate;
+
   const aimUid = aim.ImageAnnotationCollection["uniqueIdentifier"]["root"];
+  data["aimUid"] =  aimUid;
   const color = markupEntity?.lineColor?.value;
+  data["color"] = color;
+  
+  if(markupEntity["lineStyle"])
+    data["lineStyle"] = markupEntity["lineStyle"];
 
   let retData = {
     imageId,
-    data: {
-      markupType: markupEntity["xsi:type"],
-      calculations,
-      coordinates:
-        markupEntity.twoDimensionSpatialCoordinateCollection
-          .TwoDimensionSpatialCoordinate,
-      markupUid,
-      aimUid,
-    },
+    data
   };
 
   if (color) retData.data["color"] = color;

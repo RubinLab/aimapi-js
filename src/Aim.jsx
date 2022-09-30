@@ -16,7 +16,7 @@ class Aim {
         aimData = getStudyAimData(study);
       }
       addSemanticAnswersToAimData(answers, aimData);
-      addUserToAimData(user, aimData);
+      // addUserToAimData(user, aimData);
     }
     else { //old way of aim creation to support functionalities that depend on aimapi
       aimData = data;
@@ -34,17 +34,18 @@ class Aim {
     } = aimData);
     this.temp.aimType = aimType;
     this.temp.aim.trackingUId = trackingUId;
-    this.xmlns = aimConf.xmlns;
-    this["xmlns:rdf"] = aimConf["xmlns:rdf"];
-    this["xmlns:xsi"] = aimConf["xmlns:xsi"];
+    // this.xmlns = aimConf.xmlns;
+    // this["xmlns:rdf"] = aimConf["xmlns:rdf"];
+    // this["xmlns:xsi"] = aimConf["xmlns:xsi"];
     this.aimVersion = aimConf.aimVersion;
-    this["xsi:schemaLocation"] = aimConf["xsi:schemaLocation"];
+    // this["xsi:schemaLocation"] = aimConf["xsi:schemaLocation"];
     this.uniqueIdentifier = "";
     this.studyInstanceUid = { root: this.temp.aim.studyInstanceUid };
     this.seriesInstanceUid = { root: generateUid() };
     this.accessionNumber = { value: this.temp.study.accessionNumber };
     this.dateTime = { value: this.getDate() };
-    this.user = this._createUser(this.temp.user);
+    this.user = user;
+    // this.user = this._createUser(this.temp.user);
     this.equipment = this._createEquipment(this.temp.equipment);
     this.person = this._createPerson(this.temp.person);
     this.imageAnnotations = {
@@ -415,7 +416,7 @@ class Aim {
     return coordinates;
   };
 
-  addMarkupEntity = (type, shapeIndex, points, imageUid, frameNum) => {
+  addMarkupEntity = (type, shapeIndex, points, imageUid, frameNum, lineStyle) => {
     if (!this.imageAnnotations.ImageAnnotation[0]["markupEntityCollection"])
       this.imageAnnotations.ImageAnnotation[0]["markupEntityCollection"] = { MarkupEntity: [] };
     var obj = {};
@@ -434,6 +435,9 @@ class Aim {
     obj["includeFlag"] = { value: true };
     obj["imageReferenceUid"] = { root: imageUid };
     obj["referencedFrameNumber"] = { value: frameNum };
+    if (lineStyle) {
+      obj["lineStyle"] = { value: lineStyle };
+    }
     obj["twoDimensionSpatialCoordinateCollection"] = {
       TwoDimensionSpatialCoordinate: this._createCoordinateArray(points),
     };
