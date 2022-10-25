@@ -302,20 +302,24 @@ export const getStudyModalityFromExamTypes = (examTypes) => {
   }
   if (!examTypes.length) return "";
   if (examTypes.length === 1) return examTypes[0];
-  if (examTypes.includes("PT")) {
-    if (examTypes.includes("CT")) return "PET-CT";
-    if (examTypes.includes("MR")) return "PET-MR";
-  } else if (examTypes.includes("US") && examTypes.includes("RF"))
+  if (examTypes.includes("CT")) {
+    if(examTypes.includes("PT")) return "PET-CT";
+    else return "CT";
+  }  
+  if (examTypes.includes("MR")){
+    if(examTypes.includes("PT"))return "PET-MR";
+    else return "MR";
+  } 
+  if (examTypes.includes("US") && examTypes.includes("RF"))
     return "US-RF";
-  else
-    return {
-      code: "99EPADM0",
-      codeSystemName: "99EPAD",
-      "iso:displayName": {
-        "xmlns:iso": "uri:iso.org:21090",
-        value: "NA",
-      },
-    };
+  return {
+    code: "99EPADM0",
+    codeSystemName: "99EPAD",
+    "iso:displayName": {
+      "xmlns:iso": "uri:iso.org:21090",
+      value: "NA",
+    },
+  };
 };
 
 // ---------- aimapi additional methods --------
