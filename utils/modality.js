@@ -99,7 +99,7 @@ export var modalities = {
   },
   "US-RF": {
     codeValue: "RID49581",
-    codeMeaning: "US-",
+    codeMeaning: "US-RF",
     codingSchemeDesignator: "RADLEX",
     codingSchemeVersion: "4.1",
   },
