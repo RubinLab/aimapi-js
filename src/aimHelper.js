@@ -295,13 +295,14 @@ function addSingleImageDataToAim(aim, image) {
 }
 
 export const getStudyModalityFromExamTypes = (examTypes) => {
+  console.log("Exam types", examTypes);
   // remove SEG from examTypes
   var index = examTypes.indexOf("SEG");
   if (index > -1) {
     examTypes.splice(index, 1);
   }
-  if (!examTypes.length) return "";
-  if (examTypes.length === 1) return examTypes[0];
+  if (!examTypes.length) { console.log("Returning empty"); return ""};
+  if (examTypes.length === 1) {console.log("Returning ", examTypes[0]);return examTypes[0]};
   if (examTypes.includes("CT")) {
     if(examTypes.includes("PT")) return "PET-CT";
     else return "CT";
@@ -312,6 +313,7 @@ export const getStudyModalityFromExamTypes = (examTypes) => {
   } 
   if (examTypes.includes("US") && examTypes.includes("RF"))
     return "US-RF";
+  console.log("Returning default value");
   return {
     code: "99EPADM0",
     codeSystemName: "99EPAD",
