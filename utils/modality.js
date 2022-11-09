@@ -57,6 +57,12 @@ export var modalities = {
   },
   CR: {
     codeValue: "CR",
+    codeMeaning: "Digital Radiography",
+    codingSchemeDesignator: dcmDesignator,
+    codingSchemeVersion: lexVersion,
+  },
+  DX: {
+    codeValue: "DX",
     codeMeaning: "Computed Radiography",
     codingSchemeDesignator: dcmDesignator,
     codingSchemeVersion: lexVersion,
