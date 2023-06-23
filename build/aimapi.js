@@ -1233,8 +1233,8 @@
 
   function getSingleImageData(image) {
     return {
-      sopClassUid: image.data.string("x00080016") || "",
-      sopInstanceUid: image.data.string("x00080018") || ""
+      sopClassUid: image.data.string("x00080016") || image.metadata?.x00080016 || "",
+      sopInstanceUid: image.data.string("x00080018") || image.metadata?.x00080018 || ""
     };
   }
 
