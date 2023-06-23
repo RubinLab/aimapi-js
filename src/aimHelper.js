@@ -283,7 +283,7 @@ export function addUserToAimData({ name, loginName }, aimData) {
 }
 
 function getSingleImageData(image) {
-  consolelog(" ====> image in aim api getSingleImageData");
+  console.log(" ====> image in aim api getSingleImageData");
   console.log(image);
   return {
     sopClassUid: image.data?.string("x00080016") || image.metadata?.x00080016|| "",
