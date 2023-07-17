@@ -178,6 +178,9 @@ export function getAimImageData(image) {
   obj.image = [];
   const { aim, study, series, equipment, person } = obj;
 
+  console.log(" image in aim-api ===>");
+  console.log(image);
+
   aim.studyInstanceUid = image.data?.string("x0020000d") || image.metadata.x0020000d || "";
 
   study.startTime = image.data?.string("x00080030") || image.metadata?.x00080030 || "";
