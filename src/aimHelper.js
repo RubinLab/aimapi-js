@@ -178,9 +178,6 @@ export function getAimImageData(image) {
   obj.image = [];
   const { aim, study, series, equipment, person } = obj;
 
-  console.log(" image in aim-api ===>");
-  console.log(image);
-
   aim.studyInstanceUid = image.data?.string("x0020000d") || image.metadata.x0020000d || "";
 
   study.startTime = image.data?.string("x00080030") || image.metadata?.x00080030 || "";
@@ -286,8 +283,6 @@ export function addUserToAimData({ name, loginName }, aimData) {
 }
 
 function getSingleImageData(image) {
-  console.log(" ====> image in aim api getSingleImageData");
-  console.log(image);
   return {
     sopClassUid: image.data?.string("x00080016") || image.metadata?.x00080016|| "",
     sopInstanceUid: image.data?.string("x00080018") || image.metadata?.x00080018 || "",
