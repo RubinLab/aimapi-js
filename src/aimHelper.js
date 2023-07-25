@@ -178,29 +178,29 @@ export function getAimImageData(image) {
   obj.image = [];
   const { aim, study, series, equipment, person } = obj;
 
-  aim.studyInstanceUid = image.data.string("x0020000d") || "";
+  aim.studyInstanceUid = image.data?.string("x0020000d") || image.metadata.x0020000d || "";
 
-  study.startTime = image.data.string("x00080030") || "";
-  study.instanceUid = image.data.string("x0020000d") || "";
-  study.startDate = image.data.string("x00080020") || "";
-  study.accessionNumber = image.data.string("x00080050") || "";
+  study.startTime = image.data?.string("x00080030") || image.metadata?.x00080030 || "";
+  study.instanceUid = image.data?.string("x0020000d") || image.metadata?.x0020000d || "";
+  study.startDate = image.data?.string("x00080020") || image.metadata?.x00080020 || "";
+  study.accessionNumber = image.data?.string("x00080050") || image.metadata?.x00080050 || "";
 
-  series.instanceUid = image.data.string("x0020000e") || "";
-  series.modality = image.data.string("x00080060") || "";
-  series.number = image.data.string("x00200011") || "";
-  series.description = image.data.string("x0008103e") || "";
-  series.instanceNumber = image.data.string("x00200013") || "";
+  series.instanceUid = image.data?.string("x0020000e") || image.metadata?.x0020000e || "";
+  series.modality = image.data?.string("x00080060") || image.metadata?.x00080060 || "";
+  series.number = image.data?.string("x00200011") || image.metadata?.x00200011 || "";
+  series.description = image.data?.string("x0008103e") || image.metadata?.x0008103e || "";
+  series.instanceNumber = image.data?.string("x00200013") || image.metadata?.x00200013 ||  "";
 
   obj.image.push(getSingleImageData(image));
 
-  equipment.manufacturerName = image.data.string("x00080070") || "";
-  equipment.manufacturerModelName = image.data.string("x00081090") || "";
-  equipment.softwareVersion = image.data.string("x00181020") || "";
+  equipment.manufacturerName = image.data?.string("x00080070") || image.metadata?.x00080070 || "";
+  equipment.manufacturerModelName = image.data?.string("x00081090") ||  image.metadata?.x00081090 || "";
+  equipment.softwareVersion = image.data?.string("x00181020") || image.metadata?.x00181020 || "";
 
-  person.sex = image.data.string("x00100040") || "";
-  person.name = image.data.string("x00100010") || "";
-  person.patientId = image.data.string("x00100020") || "";
-  person.birthDate = image.data.string("x00100030") || "";
+  person.sex = image.data?.string("x00100040") || image.metadata?.x00100040 || "";
+  person.name = image.data?.string("x00100010") || image.metadata?.x00100010 || "";
+  person.patientId = image.data?.string("x00100020") || image.metadata?.x00100020 || "";
+  person.birthDate = image.data?.string("x00100030") || image.metadata?.x00100030 || "";
 
   return obj;
 }
@@ -284,8 +284,8 @@ export function addUserToAimData({ name, loginName }, aimData) {
 
 function getSingleImageData(image) {
   return {
-    sopClassUid: image.data.string("x00080016") || "",
-    sopInstanceUid: image.data.string("x00080018") || "",
+    sopClassUid: image.data?.string("x00080016") || image.metadata?.x00080016|| "",
+    sopInstanceUid: image.data?.string("x00080018") || image.metadata?.x00080018 || "",
   };
 }
 
