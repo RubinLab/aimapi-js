@@ -8,7 +8,7 @@ class Aim {
     let aimData;
     const { image, study, answers, user } = data;
     // new aim creation (data includes image||study data and answers)
-    if (image || study || answers) {
+    if ((image || study) && answers) {
       if (aimType === enumAimType.imageAnnotation) {
         aimData = getAimImageData(image);
       }
