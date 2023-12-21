@@ -463,7 +463,7 @@ function getAimImageDataFromSeg(image) {
   equipment.manufacturerModelName = image.ManufacturerModelName || "";
   equipment.softwareVersion = image.SoftwareVersions || "";
   person.sex = image.PatientSex || "";
-  person.name = image.PatientName || "";
+  person.name = image.PatientName ? (image.PatientName.Alphabetic ? image.PatientName.Alphabetic : image.PatientName) : "";
   person.patientId = image.PatientID || "";
   person.birthDate = image.PatientBirthDate || "";
   return obj;
