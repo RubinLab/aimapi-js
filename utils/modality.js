@@ -109,4 +109,10 @@ export var modalities = {
     codingSchemeDesignator: "RADLEX",
     codingSchemeVersion: "4.1",
   },
+  "PX": {
+    codeValue: "PX",
+    codeMeaning: "Panoramic X-Ray",
+    codingSchemeDesignator: dcmDesignator,
+    codingSchemeVersion: lexVersion,
+  },
 };
