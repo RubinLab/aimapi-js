@@ -1,5 +1,6 @@
 var dcmDesignator = "DCM";
 var lexVersion = "20121129";
+var lexVersion2 = '20231115';
 //from the link below
 //http://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_29.html
 //http://www.dicomlibrary.com/dicom/sop/
@@ -113,6 +114,6 @@ export var modalities = {
     codeValue: "PX",
     codeMeaning: "Panoramic X-Ray",
     codingSchemeDesignator: dcmDesignator,
-    codingSchemeVersion: lexVersion,
+    codingSchemeVersion: lexVersion2,
   },
 };
